@@ -1,0 +1,3172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>艾尔法大陆 MUD v0.8</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:#0b0f17;
+  color:#eee;
+  font-family:"Microsoft YaHei",monospace;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+button{
+  border:0;
+  border-radius:8px;
+  padding:9px;
+  background:#263044;
+  color:#eee;
+  font-size:13px;
+}
+button:active{background:#3d4c6d}
+.hidden{display:none!important}
+.center{
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:radial-gradient(circle at top,#263b63,#0b0f17 60%);
+}
+.box{
+  width:100%;
+  max-width:460px;
+  background:#151b29;
+  border:1px solid #38445f;
+  border-radius:16px;
+  padding:22px;
+}
+h1,h2,h3{color:#ffd369;margin-top:0}
+.main-btn{
+  width:100%;
+  margin-top:18px;
+  font-weight:bold;
+  background:linear-gradient(135deg,#5ea8ff,#a77dff)
+}
+.screen{height:100vh;display:flex;flex-direction:column}
+.top{
+  background:#151b29;
+  border-bottom:1px solid #30394f;
+  padding:8px 10px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.name{width:45%;font-size:13px;line-height:1.45}
+.exp{flex:1}
+.exp-t{font-size:12px;color:#b8dfff;margin-bottom:4px}
+.bar{height:10px;background:#252d3f;border-radius:8px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,#5ee7ff,#8f7dff)}
+.content{flex:1;overflow-y:auto;padding:10px}
+.card{
+  background:#171d2b;
+  border:1px solid #30394f;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:10px;
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.row{
+  background:#101622;
+  border:1px solid #273047;
+  border-radius:7px;
+  padding:7px;
+  font-size:13px;
+  line-height:1.5;
+}
+.small{font-size:12px;color:#aaa;line-height:1.6}
+.good{color:#7bed9f}
+.bad{color:#ff7676}
+.info{color:#8fd3ff}
+.warn{color:#ffd369}
+.bottom{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:6px;
+  background:#151b29;
+  border-top:1px solid #30394f;
+  padding:8px;
+}
+.bottom button{font-size:13px;padding:10px 2px}
+.quick{
+  background:#111724;
+  border-top:1px solid #30394f;
+  padding:8px;
+}
+.slot-title{font-size:12px;color:#aaa;margin:4px 0}
+.slot{
+  background:#1d2536;
+  border:1px dashed #4a5878;
+  border-radius:8px;
+  text-align:center;
+  padding:7px 2px;
+  font-size:12px;
+  color:#ccc;
+}
+.log-line{border-bottom:1px solid #252d3f;padding:5px 0;font-size:13px}
+input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #4a5878;
+  background:#0d1018;
+  color:#fff;
+  font-size:15px;
+}
+.mapcell{
+  min-height:58px;
+  font-size:11px;
+  padding:4px;
+  border:1px solid #38445f;
+  background:#1b2436;
+  word-break:break-all;
+}
+.current{background:#36527a!important}
+.home{border-color:#7bed9f}
+.building{border-color:#8fd3ff}
+.dungeon{border-color:#ff7676}
+.unknown{background:#0f131d!important;color:#666;border-color:#222}
+.treasure{border-color:#ffd369}
+.trap{border-color:#ff9f43}
+.battlebar{
+  height:12px;
+  background:#252d3f;
+  border-radius:8px;
+  overflow:hidden;
+  margin:4px 0;
+}
+.battlefill{height:100%;background:#7bed9f}
+.enemyfill{height:100%;background:#ff7676}
+.castfill{height:100%;background:#ffd369}
+</style>
+</head>
+<body>
+
+<div id="welcome" class="center">
+  <div class="box">
+    <h1>欢迎来到艾尔法大陆</h1>
+    <p>现在你将前往剑与魔法的世界</p>
+    <p>祝你好运，转生者。</p>
+    <button class="main-btn" onclick="goReborn()">开始异世界冒险</button>
+  </div>
+</div>
+
+<div id="reborn" class="screen hidden">
+  <div class="top">
+    <div class="name">转生准备</div>
+    <div class="exp">
+      <div class="exp-t">命运生成中</div>
+      <div class="bar"><div class="fill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <h2>转生界面</h2>
+      <p class="small">家庭会影响初始身份、建筑环境、教育资源、治疗能力与童年成长。</p>
+    </div>
+    <div id="preview" class="card"></div>
+    <div class="card">
+      <input id="nameInput" placeholder="输入名字，不填则为：无名转生者">
+    </div>
+    <div class="grid">
+      <button onclick="randomReborn()">重新转生</button>
+      <button onclick="confirmReborn()">确认降生</button>
+      <button onclick="loadGame()">读取存档</button>
+      <button onclick="clearSave()">清除存档</button>
+    </div>
+  </div>
+</div>
+
+<div id="game" class="screen hidden">
+  <div class="top">
+    <div id="topName" class="name"></div>
+    <div class="exp">
+      <div id="expText" class="exp-t"></div>
+      <div class="bar"><div id="expFill" class="fill"></div></div>
+    </div>
+  </div>
+
+  <div id="main" class="content"></div>
+
+  <div class="quick">
+    <div class="slot-title">道具快捷栏</div>
+    <div class="grid4">
+      <button id="itemSlot0" class="slot" onclick="useQuickItem(0)">空</button>
+      <button id="itemSlot1" class="slot" onclick="useQuickItem(1)">空</button>
+      <button id="itemSlot2" class="slot" onclick="useQuickItem(2)">空</button>
+      <button id="itemSlot3" class="slot" onclick="useQuickItem(3)">空</button>
+    </div>
+    <div class="slot-title">技能快捷栏</div>
+    <div class="grid3">
+      <button id="skillSlot0" class="slot">空</button>
+      <button id="skillSlot1" class="slot">空</button>
+      <button id="skillSlot2" class="slot">空</button>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <button onclick="showStatus()">状态</button>
+    <button onclick="showSkills()">技能</button>
+    <button onclick="showRest()">休息</button>
+    <button onclick="showBag()">背包</button>
+    <button onclick="showActions()">行动</button>
+  </div>
+</div>
+
+<script>
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function randomFrom(a){return a[Math.floor(Math.random()*a.length)]}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n){return Number.isInteger(n)?n:Number(n.toFixed(1))}
+function percent(a,b){return b<=0?0:clamp(Math.floor(a/b*100),0,100)}
+
+function formatMoney(copper){
+  copper=Math.max(0,Math.floor(copper||0));
+  const gold=Math.floor(copper/10000);
+  copper%=10000;
+  const silver=Math.floor(copper/100);
+  copper%=100;
+  let arr=[];
+  if(gold>0)arr.push(`${gold}金帮`);
+  if(silver>0)arr.push(`${silver}银冕`);
+  if(copper>0||arr.length===0)arr.push(`${copper}铜印`);
+  return arr.join(" ");
+}
+
+const elements=["火","水","冰","电","土","风","光","暗","圣"];
+
+// 每年自然成长总量，F-S 对应约 1.0 - 2.5 白值总成长
+const aptitudes={
+  F:1.0,
+  E:1.2,
+  D:1.4,
+  C:1.6,
+  B:1.9,
+  A:2.2,
+  S:2.5
+};
+
+const aptitudePool=["F","F","F","E","E","E","D","D","D","C","C","B","B","A","S"];
+
+const labelMap={
+  body:"身躯",
+  hand:"手部",
+  brain:"脑部",
+  leg:"脚部",
+  str:"力量",
+  mag:"魔力",
+  agi:"敏捷",
+  sta:"耐力",
+  int:"智力",
+  hp:"生命",
+  mp:"魔力值",
+  pDef:"物理防御",
+  mDef:"魔法防御",
+  pRes:"物理抗性",
+  mRes:"魔法抗性",
+  statusRes:"异常抗性",
+  carry:"负重"
+};
+
+const races={
+  人族:{
+    mods:{body:0,hand:0,brain:0,leg:0,str:0,mag:0,agi:0,sta:0,int:0,hp:10,mp:5,pDef:1,mDef:1,carry:10},
+    bias:{火:0,水:0,冰:0,电:0,土:0,风:0,光:0,暗:0,圣:-2}
+  },
+  精灵族:{
+    mods:{body:-1,hand:0,brain:3,leg:1,str:-1,mag:4,agi:2,sta:-1,int:2,hp:-10,mp:80,pDef:0,mDef:3,carry:-5},
+    bias:{火:-1,水:2,冰:1,电:0,土:-1,风:2,光:2,暗:-2,圣:-1}
+  },
+  恶魔族:{
+    mods:{body:2,hand:1,brain:1,leg:0,str:2,mag:2,agi:0,sta:2,int:0,hp:60,mp:40,pDef:2,mDef:1,carry:10},
+    bias:{火:1,水:-1,冰:-1,电:0,土:1,风:0,光:-2,暗:3,圣:-5}
+  },
+  兽人族:{
+    mods:{body:2,hand:1,brain:-2,leg:0,str:4,mag:-2,agi:0,sta:4,int:-1,hp:50,mp:-10,pDef:2,mDef:0,carry:20},
+    bias:{火:0,水:-1,冰:-1,电:-1,土:1,风:0,光:-1,暗:0,圣:-3}
+  },
+  矮人族:{
+    mods:{body:2,hand:2,brain:0,leg:-1,str:2,mag:-1,agi:-2,sta:2,int:0,hp:35,mp:0,pDef:4,mDef:2,carry:35},
+    bias:{火:1,水:-1,冰:-1,电:-1,土:2,风:-2,光:0,暗:0,圣:-2}
+  },
+  猫人族:{
+    mods:{body:-1,hand:1,brain:0,leg:3,str:0,mag:0,agi:5,sta:0,int:0,hp:0,mp:0,pDef:0,mDef:0,carry:-5},
+    bias:{火:0,水:0,冰:0,电:1,土:-1,风:2,光:0,暗:1,圣:-2}
+  },
+  龙人族:{
+    mods:{body:4,hand:2,brain:0,leg:-1,str:5,mag:1,agi:-2,sta:4,int:-1,hp:110,mp:20,pDef:5,mDef:2,carry:40},
+    bias:{火:3,水:-1,冰:-1,电:0,土:1,风:1,光:0,暗:0,圣:-2}
+  },
+  哥布林:{
+    mods:{body:-2,hand:0,brain:-1,leg:2,str:-2,mag:-1,agi:3,sta:-1,int:0,hp:-20,mp:-10,pDef:-1,mDef:-1,carry:-15},
+    bias:{火:0,水:0,冰:-1,电:0,土:0,风:1,光:-1,暗:1,圣:-3}
+  }
+};
+
+const identities={
+  农民:{tier:5,maxLv:5,mods:{body:1,hand:0,brain:0,leg:0,str:1,mag:-1,agi:0,sta:3,int:0,hp:20,mp:0,pDef:1,mDef:0,carry:20},coins:40,special:"采集作物"},
+  奴隶:{tier:5,maxLv:5,mods:{body:1,hand:0,brain:-1,leg:0,str:1,mag:-2,agi:-1,sta:4,int:-1,hp:10,mp:-10,pDef:0,mDef:-1,carry:10},coins:0,special:"忍耐劳作"},
+  商人:{tier:5,maxLv:5,mods:{body:0,hand:0,brain:1,leg:0,str:-1,mag:1,agi:0,sta:0,int:1,hp:0,mp:10,pDef:0,mDef:1,carry:25},coins:180,special:"倒卖"},
+  铁匠:{tier:5,maxLv:5,mods:{body:1,hand:2,brain:0,leg:-1,str:3,mag:-1,agi:-1,sta:1,int:0,hp:20,mp:0,pDef:2,mDef:0,carry:30},coins:90,special:"打磨装备"},
+  学徒:{tier:5,maxLv:5,mods:{body:-1,hand:0,brain:2,leg:0,str:-1,mag:2,agi:0,sta:-1,int:2,hp:-10,mp:30,pDef:-1,mDef:1,carry:-5},coins:60,special:"研读"},
+  盗贼:{tier:5,maxLv:5,mods:{body:-1,hand:2,brain:0,leg:2,str:0,mag:0,agi:4,sta:0,int:0,hp:-10,mp:0,pDef:-1,mDef:0,carry:-10},coins:60,special:"盗窃"},
+  拾荒者:{tier:5,maxLv:5,mods:{body:-1,hand:1,brain:0,leg:1,str:0,mag:-1,agi:2,sta:1,int:0,hp:-10,mp:0,pDef:-1,mDef:-1,carry:20},coins:10,special:"捡破烂"},
+  佣兵:{tier:5,maxLv:5,mods:{body:1,hand:1,brain:0,leg:1,str:3,mag:-1,agi:1,sta:2,int:0,hp:30,mp:0,pDef:2,mDef:0,carry:10},coins:120,special:"护送任务"},
+  浪客:{tier:5,maxLv:5,mods:{body:0,hand:1,brain:0,leg:1,str:2,mag:0,agi:2,sta:1,int:0,hp:10,mp:0,pDef:0,mDef:0,carry:0},coins:70,special:"剑术练习"},
+  信徒:{tier:4,maxLv:5,mods:{body:0,hand:0,brain:2,leg:0,str:-1,mag:2,agi:0,sta:0,int:2,hp:0,mp:30,pDef:0,mDef:3,carry:0},coins:100,special:"祈祷"},
+  炼金学者:{tier:4,maxLv:5,mods:{body:-1,hand:1,brain:4,leg:-1,str:-2,mag:4,agi:-1,sta:-1,int:4,hp:-10,mp:60,pDef:-1,mDef:3,carry:0},coins:180,special:"调制毒药"},
+  冒险家:{tier:4,maxLv:5,mods:{body:1,hand:1,brain:1,leg:1,str:2,mag:1,agi:2,sta:2,int:1,hp:25,mp:15,pDef:1,mDef:1,carry:20},coins:160,special:"冒险准备"},
+  工匠:{tier:4,maxLv:5,mods:{body:1,hand:3,brain:1,leg:-1,str:2,mag:0,agi:-1,sta:1,int:1,hp:20,mp:10,pDef:2,mDef:1,carry:35},coins:150,special:"打磨装备"}
+};
+
+const families={
+  流浪孤儿:{homeType:"荒郊窝棚",wealth:0,heal:3,edu:0,coins:0,nutrition:.72,bed:.45,allowed:["拾荒者","盗贼","浪客"]},
+  奴隶出身:{homeType:"奴隶棚屋",wealth:0,heal:6,edu:0,coins:0,nutrition:.78,bed:.55,allowed:["奴隶","农民"]},
+  贫困农村:{homeType:"村庄",wealth:1,heal:18,edu:1,coins:20,nutrition:.9,bed:.85,allowed:["农民","拾荒者","铁匠","浪客"]},
+  普通农户:{homeType:"村庄",wealth:2,heal:35,edu:1,coins:60,nutrition:1,bed:1,allowed:["农民","铁匠","学徒","佣兵","浪客"]},
+  铁匠家庭:{homeType:"镇子",wealth:3,heal:48,edu:2,coins:130,nutrition:1.05,bed:1.1,allowed:["铁匠","工匠","学徒","佣兵"]},
+  商人家庭:{homeType:"镇子",wealth:4,heal:65,edu:3,coins:320,nutrition:1.12,bed:1.2,allowed:["商人","学徒","信徒"]},
+  没落贵族:{homeType:"城池",wealth:4,heal:58,edu:4,coins:260,nutrition:1.05,bed:1.15,allowed:["学徒","信徒","佣兵","冒险家"]},
+  教会收养:{homeType:"教会城镇",wealth:3,heal:75,edu:4,coins:120,nutrition:1.05,bed:1.2,allowed:["信徒","学徒","炼金学者"]}
+};
+
+const itemDB={
+  粗粮:{type:"food",hunger:25,weight:1,price:25,desc:"恢复25饱食度。"},
+  干粮:{type:"food",hunger:40,weight:1,price:55,desc:"恢复40饱食度。"},
+  肉干:{type:"food",hunger:65,weight:1,price:120,desc:"恢复65饱食度。"},
+  小型生命药水:{type:"use",effect:"hp",value:60,weight:1,price:350,desc:"恢复60点HP。"},
+  小型耐力药水:{type:"use",effect:"sta",value:35,weight:1,price:300,desc:"恢复35点耐力。"},
+  小型魔力药水:{type:"use",effect:"mp",value:45,weight:1,price:420,desc:"恢复45点MP。"},
+  简易帐篷:{type:"tool",weight:5,price:1600,desc:"允许野外扎营。"},
+  露营工具:{type:"tool",weight:4,price:1200,desc:"提高野外休息质量。"},
+  斧子:{type:"tool",weight:4,price:500,desc:"用于砍树。"},
+  镐子:{type:"tool",weight:5,price:550,desc:"用于挖矿。"},
+  驮马:{type:"mount",weight:0,price:6000,desc:"移动耐力消耗降低。"},
+  干柴:{type:"material",weight:2,price:30,desc:"扎营材料。"},
+  木材:{type:"material",weight:4,price:45,desc:"木材。"},
+  劣质矿石:{type:"material",weight:3,price:35,desc:"低级矿石。"},
+  草药:{type:"material",weight:1,price:55,desc:"草药。"},
+  废铁:{type:"material",weight:2,price:25,desc:"废铁。"},
+  兽骨:{type:"material",weight:2,price:40,desc:"兽骨。"},
+  魔狼牙:{type:"material",weight:1,price:130,desc:"魔狼牙。"},
+  魔狼皮:{type:"material",weight:2,price:160,desc:"魔狼皮。"},
+  魔石碎片:{type:"material",weight:1,price:260,desc:"低阶魔石碎片。"},
+  木剑:{type:"equip",slot:"weapon",weaponType:"sword",handed:"one",mods:{str:1},weight:3,price:260,desc:"训练用木剑。"},
+  铁短剑:{type:"equip",slot:"weapon",weaponType:"sword",handed:"one",mods:{str:3,hand:1},weight:4,price:800,desc:"单手剑，力量+3，手部+1。"},
+  匕首:{type:"equip",slot:"weapon",weaponType:"dagger",handed:"one",mods:{agi:2,hand:1},weight:2,price:650,desc:"匕首，敏捷+2，手部+1。"},
+  木盾:{type:"equip",slot:"weapon",weaponType:"shield",handed:"one",mods:{pDef:3},weight:5,price:500,desc:"盾牌，物理防御+3。"},
+  粗布衣:{type:"equip",slot:"chest",mods:{pDef:1},weight:2,price:160,desc:"胸部装备，物理防御+1。"},
+  粗布裤:{type:"equip",slot:"legs",mods:{pDef:1},weight:2,price:140,desc:"腿部装备，物理防御+1。"},
+  草鞋:{type:"equip",slot:"feet",mods:{agi:1},weight:1,price:120,desc:"脚部装备，敏捷+1。"},
+  皮帽:{type:"equip",slot:"head",mods:{pDef:1},weight:1,price:220,desc:"头部装备，物理防御+1。"},
+  学徒戒指:{type:"equip",slot:"ring",mods:{int:1},weight:1,price:1200,desc:"戒指，智力+1。"},
+  "技能书·竖劈":{type:"book",skill:"竖劈",weight:1,price:900,desc:"学习武技：竖劈。"},
+  "技能书·横斩":{type:"book",skill:"横斩",weight:1,price:900,desc:"学习武技：横斩。"},
+  "技能书·格挡":{type:"book",skill:"格挡",weight:1,price:1100,desc:"学习武技：格挡。"},
+  "技能书·火球":{type:"book",skill:"火球",element:"火",weight:1,price:2200,desc:"学习火元素魔法。"},
+  "技能书·风刃":{type:"book",skill:"风刃",element:"风",weight:1,price:2100,desc:"学习风元素技能。"}
+};
+
+const skills={
+  竖劈:{
+    type:"physical",
+    sta:18,
+    start:800,
+    cd:3500,
+    power:1.55,
+    powerText:"155%物理伤害",
+    desc:"启动0.8秒，冷却3.5秒。重型单体攻击。"
+  },
+  横斩:{
+    type:"physical",
+    sta:20,
+    start:1000,
+    cd:4000,
+    power:1.20,
+    powerText:"120%物理伤害",
+    desc:"启动1秒，冷却4秒。横向攻击。"
+  },
+  格挡:{
+    type:"defense",
+    sta:10,
+    start:200,
+    cd:2500,
+    power:0,
+    powerText:"防御技能",
+    desc:"启动0.2秒，冷却2.5秒。进入短暂防御状态。"
+  },
+  火球:{
+    type:"magic",
+    mp:35,
+    start:1200,
+    cd:4500,
+    power:1.70,
+    element:"火",
+    powerText:"170%魔法伤害",
+    desc:"启动1.2秒，冷却4.5秒。"
+  },
+  风刃:{
+    type:"magic",
+    mp:28,
+    start:700,
+    cd:3200,
+    power:1.35,
+    element:"风",
+    powerText:"135%风属性伤害",
+    desc:"启动0.7秒，冷却3.2秒。"
+  }
+};
+
+// 魔兽使用类似角色的成长结构：base 是白值，mods 是种族/魔物修正
+const monsterDB={
+  洞穴鼠:{
+    base:{body:5,hand:3,brain:2,leg:6,str:4,mag:1,agi:6,sta:4,int:1},
+    mods:{hp:30,pDef:2,mDef:1},
+    growth:"F",
+    exp:8,
+    drops:["兽骨"]
+  },
+  魔狼:{
+    base:{body:8,hand:5,brain:3,leg:10,str:8,mag:1,agi:10,sta:7,int:2},
+    mods:{hp:80,pDef:6,mDef:2},
+    growth:"D",
+    exp:18,
+    drops:["魔狼牙","魔狼皮"]
+  },
+  腐化哥布林:{
+    base:{body:9,hand:8,brain:5,leg:7,str:9,mag:3,agi:7,sta:8,int:4},
+    mods:{hp:100,pDef:9,mDef:5},
+    growth:"C",
+    exp:26,
+    drops:["废铁","魔石碎片"]
+  },
+  地穴爬行者:{
+    base:{body:14,hand:8,brain:4,leg:8,str:14,mag:2,agi:7,sta:14,int:3},
+    mods:{hp:180,pDef:18,mDef:8},
+    growth:"B",
+    exp:48,
+    drops:["魔石碎片","兽骨"]
+  },
+  地下城守卫:{
+    base:{body:22,hand:16,brain:10,leg:10,str:24,mag:8,agi:10,sta:22,int:8},
+    mods:{hp:420,pDef:30,mDef:18},
+    growth:"A",
+    exp:120,
+    drops:["魔石碎片","铁短剑","学徒戒指"]
+  }
+};
+
+let preview=null;
+let player=null;
+let logs=[];
+let battle=null;
+let battleTimer=null;
+
+function goReborn(){
+  document.getElementById("welcome").classList.add("hidden");
+  document.getElementById("reborn").classList.remove("hidden");
+  randomReborn();
+}
+
+function randomReborn(){
+  const family=randomFrom(Object.keys(families));
+  const race=randomFrom(Object.keys(races));
+  const identity=randomFrom(families[family].allowed);
+  const aptitude=randomFrom(aptitudePool);
+  const revealed=Math.random()<0.05;
+
+  preview={
+    name:"无名转生者",
+    dead:false,
+    date:{year:786,month:1,day:1},
+    ageDays:0,
+    race,
+    identity,
+    currentJob:identity,
+    family,
+    aptitude,
+    jobs:{},
+    base:{body:1,hand:1,brain:1,leg:1,str:1,mag:1,agi:1,sta:1,int:1},
+    permanent:{body:0,hand:0,brain:0,leg:0,str:0,mag:0,agi:0,sta:0,int:0,hp:0,mp:0,pDef:0,mDef:0,carry:0},
+    affinities:revealed?generateAffinities(race):null,
+    magicAwakened:revealed,
+    coins:identities[identity].coins+families[family].coins,
+    exp:0,
+    expNeed:100,
+    hp:1,
+    mp:0,
+    sta:1,
+    fatigue:0,
+    hunger:100,
+    bag:{粗粮:3},
+    skills:{},
+    itemSlots:[null,null,null,null],
+    skillSlots:[null,null,null],
+    equipment:{
+      head:null,
+      chest:null,
+      legs:null,
+      feet:null,
+      leftHand:null,
+      rightHand:null,
+      charm:null,
+      rings:[null,null,null,null,null,null,null,null,null,null],
+      stance:"normal"
+    },
+    reputation:0,
+    infamy:0,
+    health:"健康",
+    debuffs:[],
+    world:"surface",
+    location:{x:0,y:0},
+    home:{x:0,y:0,type:families[family].homeType},
+    mapZoom:"local",
+    discovered:{},
+    dynamicDungeons:[],
+    dungeonRun:null,
+    professions:{woodcutting:0,mining:0,gathering:0,training:0,study:0}
+  };
+
+  preview.jobs[identity]={
+    level:1,
+    exp:0,
+    tier:identities[identity].tier,
+    maxLv:identities[identity].maxLv,
+    lastUse:0
+  };
+
+  if(["铁匠","工匠"].includes(identity))preview.bag["劣质矿石"]=2;
+  if(["佣兵","浪客"].includes(identity))preview.bag["木剑"]=1;
+  if(["学徒","炼金学者"].includes(identity))preview.bag["技能书·竖劈"]=1;
+
+  const s=calcStats(preview);
+  preview.hp=s.maxHp;
+  preview.mp=s.maxMp;
+  preview.sta=s.maxSta;
+
+  markDiscovered(preview,0,0,"surface");
+  renderPreview();
+}
+
+function confirmReborn(){
+  const n=document.getElementById("nameInput").value.trim();
+  player=clone(preview);
+  if(n)player.name=n;
+  log(`你降生在艾尔法大陆。`);
+  log(`家庭【${player.family}】，身份【${player.identity}】，种族【${player.race}】。`);
+  enterGame();
+}
+
+function renderPreview(){
+  const s=calcStats(preview);
+  const m=getMods(preview);
+  const f=families[preview.family];
+
+  document.getElementById("preview").innerHTML=`
+    <h3>命运预览</h3>
+    <p>
+      家庭：${preview.family}<br>
+      居住环境：${f.homeType}<br>
+      种族：${preview.race}<br>
+      身份：${preview.identity}（第${identities[preview.identity].tier}阶位）<br>
+      成长资质：<span class="info">${preview.aptitude}</span><br>
+      初始货币：${formatMoney(preview.coins)}
+    </p>
+    <h3>身体部位</h3>
+    <div class="grid">
+      ${cell("身躯",preview.base.body,m.body)}
+      ${cell("手部",preview.base.hand,m.hand)}
+      ${cell("脑部",preview.base.brain,m.brain)}
+      ${cell("脚部",preview.base.leg,m.leg)}
+    </div>
+    <h3>基础能力</h3>
+    <div class="grid">
+      ${cell("力量",preview.base.str,m.str)}
+      ${cell("魔力",preview.base.mag,m.mag)}
+      ${cell("敏捷",preview.base.agi,m.agi)}
+      ${cell("耐力",preview.base.sta,m.sta)}
+      ${cell("智力",preview.base.int,m.int)}
+      <div class="row">总等级：${getTotalLevel(preview)}</div>
+      <div class="row">实力：${s.rank}</div>
+    </div>
+  `;
+}
+
+function enterGame(){
+  document.getElementById("welcome").classList.add("hidden");
+  document.getElementById("reborn").classList.add("hidden");
+  document.getElementById("game").classList.remove("hidden");
+  migratePlayer();
+  markDiscovered(player,player.location.x,player.location.y,player.world);
+  updateTop();
+  showActions();
+}
+
+function migratePlayer(){
+  if(!player.jobs){
+    player.jobs={};
+    player.currentJob=player.identity;
+    player.jobs[player.identity]={
+      level:player.jobLevel||1,
+      exp:player.jobExp||0,
+      tier:identities[player.identity].tier,
+      maxLv:identities[player.identity].maxLv,
+      lastUse:player.ageDays||0
+    };
+  }
+  if(!player.professions)player.professions={woodcutting:0,mining:0,gathering:0,training:0,study:0};
+  if(!player.dynamicDungeons)player.dynamicDungeons=[];
+  if(!player.discovered)player.discovered={};
+  if(player.dead===undefined)player.dead=false;
+}
+
+function dateText(d){return `太阳历${d.year}年${d.month}月${d.day}日`}
+function ageText(days){
+  const y=Math.floor(days/360);
+  const m=Math.floor((days%360)/30);
+  return `${y}岁${m}月`;
+}
+function ageYear(){return Math.floor(player.ageDays/360)}
+
+function stage(){
+  const y=ageYear();
+  if(y<3)return "婴儿期";
+  if(y<6)return "幼儿期";
+  if(y<9)return "童年前期";
+  if(y<12)return "童年中期";
+  if(y<15)return "少年期";
+  return "冒险期";
+}
+
+function getAgeActionDays(){
+  const y=ageYear();
+  if(y<6)return 180;
+  if(y<9)return 90;
+  if(y<12)return 60;
+  if(y<15)return 30;
+  return 7;
+}
+
+function updateTop(){
+  if(!player)return;
+  document.getElementById("topName").innerHTML=`${player.name}<br><span class="small">${ageText(player.ageDays)} ${player.race}</span>`;
+  document.getElementById("expText").textContent=`${dateText(player.date)} | 成长经验 ${player.exp}/${player.expNeed}`;
+  document.getElementById("expFill").style.width=percent(player.exp,player.expNeed)+"%";
+  for(let i=0;i<4;i++)document.getElementById("itemSlot"+i).textContent=player.itemSlots[i]||"空";
+  for(let i=0;i<3;i++)document.getElementById("skillSlot"+i).textContent=player.skillSlots[i]||"空";
+}
+
+function getCurrentJob(){
+  if(!player.jobs[player.currentJob]){
+    player.jobs[player.currentJob]={
+      level:1,
+      exp:0,
+      tier:identities[player.currentJob].tier,
+      maxLv:identities[player.currentJob].maxLv,
+      lastUse:player.ageDays
+    };
+  }
+  return player.jobs[player.currentJob];
+}
+
+function getMods(c){
+  const keys=["body","hand","brain","leg","str","mag","agi","sta","int","hp","mp","pDef","mDef","carry"];
+  const r=races[c.race].mods;
+  const id=identities[c.currentJob||c.identity].mods;
+  const p=c.permanent;
+  const e=equipMods(c);
+  const j=jobMods(c);
+  const out={};
+  keys.forEach(k=>out[k]=(r[k]||0)+(id[k]||0)+(p[k]||0)+(e[k]||0)+(j[k]||0));
+  return out;
+}
+
+function equipMods(c){
+  const out={body:0,hand:0,brain:0,leg:0,str:0,mag:0,agi:0,sta:0,int:0,hp:0,mp:0,pDef:0,mDef:0,carry:0};
+  const add=n=>{
+    if(!n)return;
+    const it=itemDB[n];
+    if(!it||!it.mods)return;
+    Object.keys(it.mods).forEach(k=>out[k]=(out[k]||0)+it.mods[k]);
+  };
+
+  add(c.equipment.head);
+  add(c.equipment.chest);
+  add(c.equipment.legs);
+  add(c.equipment.feet);
+  add(c.equipment.leftHand);
+  add(c.equipment.rightHand);
+  add(c.equipment.charm);
+  c.equipment.rings.forEach(add);
+
+  const l=itemDB[c.equipment.leftHand];
+  const r=itemDB[c.equipment.rightHand];
+
+  if(c.equipment.stance==="twohand" && r && r.weaponType==="sword" && !l){
+    out.str+=1;
+    out.hand+=1;
+  }
+
+  if((c.currentJob||c.identity)==="盗贼" && l && r && l.weaponType==="dagger" && r.weaponType==="dagger"){
+    out.agi+=2;
+    out.hand+=2;
+  }
+
+  if(r && r.weaponType==="sword" && l && l.weaponType==="shield"){
+    out.pDef+=2;
+  }
+
+  return out;
+}
+
+function getCombatMods(c){
+  const l=itemDB[c.equipment.leftHand];
+  const r=itemDB[c.equipment.rightHand];
+
+  let damage=0;
+  let hit=0;
+  let block=0;
+  let text=[];
+
+  if(c.equipment.stance==="twohand" && r && r.weaponType==="sword" && !l){
+    damage+=15;
+    hit+=5;
+    text.push("双手持剑：伤害+15%，命中+5%");
+  }
+
+  if((c.currentJob||c.identity)==="盗贼" && l && r && l.weaponType==="dagger" && r.weaponType==="dagger"){
+    damage+=20;
+    hit+=8;
+    text.push("盗贼双匕首：伤害+20%，命中+8%");
+  }
+
+  if(r && r.weaponType==="sword" && l && l.weaponType==="shield"){
+    block+=10;
+    text.push("剑盾姿态：格挡效率+10%，额外物防+2");
+  }
+
+  return {damage,hit,block,text};
+}
+
+function jobMods(c){
+  const current=c.currentJob||c.identity;
+  const jobData=c.jobs&&c.jobs[current]?c.jobs[current]:{level:1};
+  const lv=Math.max(0,jobData.level-1);
+  const out={body:0,hand:0,brain:0,leg:0,str:0,mag:0,agi:0,sta:0,int:0,hp:0,mp:0,pDef:0,mDef:0,carry:0};
+
+  if(["农民","奴隶","拾荒者"].includes(current)){out.sta+=lv;out.carry+=lv*2}
+  if(["铁匠","工匠"].includes(current)){out.hand+=lv;out.str+=lv;out.carry+=lv*2}
+  if(["盗贼"].includes(current)){out.agi+=lv;out.hand+=lv}
+  if(["学徒","炼金学者","信徒"].includes(current)){out.brain+=lv;out.int+=lv;out.mag+=lv}
+  if(["佣兵","浪客","冒险家"].includes(current)){out.str+=lv;out.sta+=lv;out.hp+=lv*5}
+
+  if(c.jobs){
+    Object.keys(c.jobs).forEach(j=>{
+      if(j===current)return;
+      const oldLv=c.jobs[j].level||1;
+      if(oldLv>=3){
+        if(["佣兵","浪客","冒险家"].includes(j))out.str+=1;
+        if(["学徒","炼金学者","信徒"].includes(j))out.int+=1;
+        if(["铁匠","工匠"].includes(j))out.hand+=1;
+        if(["盗贼"].includes(j))out.agi+=1;
+      }
+    });
+  }
+
+  return out;
+}
+
+function total(c,k){
+  const m=getMods(c);
+  return Math.max(0,Number((c.base[k]+(m[k]||0)).toFixed(2)));
+}
+
+function calcStats(c){
+  const m=getMods(c);
+
+  const body=total(c,"body");
+  const hand=total(c,"hand");
+  const brain=total(c,"brain");
+  const leg=total(c,"leg");
+  const str=total(c,"str");
+  const mag=total(c,"mag");
+  const agi=total(c,"agi");
+  const sta=total(c,"sta");
+  const intv=total(c,"int");
+
+  let penalty=1;
+  if(c.fatigue>40)penalty-=Math.min((c.fatigue-40)/220,0.3);
+  if(c.hunger<35)penalty-=Math.min((35-c.hunger)/150,0.2);
+  if(c.hunger<=0)penalty-=0.2;
+
+  const maxHp=Math.max(1,Math.floor((25+body*14+sta*5+m.hp)*penalty));
+  const maxMp=c.magicAwakened?Math.max(0,Math.floor((10+brain*8+mag*12+intv*3+m.mp)*penalty)):0;
+  const maxSta=Math.max(2,Math.floor((10+sta*5+body*1.5+leg*1.3)*penalty));
+
+  const pDef=Math.max(0,Math.floor(body*.8+str*.25+m.pDef));
+  const mDef=Math.max(0,Math.floor(brain*.6+mag*.4+intv*.2+m.mDef));
+  const pRes=clamp(Number((body*0.12+sta*0.08).toFixed(2)),0,75);
+  const mRes=clamp(Number((brain*0.10+mag*0.12+intv*0.05).toFixed(2)),0,75);
+  const statusRes=clamp(Number((brain*0.08+sta*0.06+intv*0.08).toFixed(2)),0,80);
+
+  const carry=Math.max(1,Math.floor(20+body*4+str*3+m.carry));
+
+  const score=maxHp*.03+maxMp*.015+str*4+mag*4+agi*3+sta*3+intv*2+pDef*5+mDef*5;
+  let rank="G-";
+  if(score>130)rank="G";
+  if(score>190)rank="G+";
+  if(score>280)rank="F-";
+  if(score>400)rank="F";
+  if(score>560)rank="F+";
+  if(score>760)rank="E-";
+  if(score>1000)rank="E";
+  if(score>1300)rank="E+";
+  if(score>1700)rank="D-";
+  if(score>2200)rank="D";
+  if(score>2800)rank="D+";
+  if(score>3600)rank="C-";
+  if(score>4600)rank="C";
+  if(score>5800)rank="C+";
+  if(score>7300)rank="B-";
+  if(score>9000)rank="B";
+  if(score>11000)rank="B+";
+  if(score>13500)rank="A-";
+  if(score>16500)rank="A";
+  if(score>20000)rank="A+";
+  if(score>26000)rank="S";
+
+  return {
+    body,hand,brain,leg,
+    str,mag,agi,sta,int:intv,
+    maxHp,maxMp,maxSta,
+    pDef,mDef,pRes,mRes,statusRes,
+    carry,rank
+  };
+}
+
+function getTotalLevel(c=player){
+  const b=c.base;
+
+  const bodyTotal=
+    b.body+
+    b.hand+
+    b.brain+
+    b.leg;
+
+  const abilityTotal=
+    b.str+
+    b.mag+
+    b.agi+
+    b.sta+
+    b.int;
+
+  const level=
+    bodyTotal*0.12+
+    abilityTotal*0.09;
+
+  return Math.max(1,Math.floor(level));
+}
+
+function getMonsterLevelFromBase(base){
+  const bodyTotal=base.body+base.hand+base.brain+base.leg;
+  const abilityTotal=base.str+base.mag+base.agi+base.sta+base.int;
+  return Math.max(1,Math.floor(bodyTotal*0.12+abilityTotal*0.09));
+}
+
+function createMonster(name,extraPower=0){
+  const template=monsterDB[name];
+  const base=clone(template.base);
+  const mods=clone(template.mods);
+
+  const growthValue=aptitudes[template.growth]||1;
+
+  for(let i=0;i<extraPower;i++){
+    const keys=["body","hand","brain","leg","str","mag","agi","sta","int"];
+    const k=randomFrom(keys);
+    base[k]+=growthValue*0.4;
+  }
+
+  const lv=getMonsterLevelFromBase(base);
+  const body=base.body;
+  const hand=base.hand;
+  const brain=base.brain;
+  const leg=base.leg;
+  const str=base.str;
+  const mag=base.mag;
+  const agi=base.agi;
+  const sta=base.sta;
+  const intv=base.int;
+
+  const maxHp=Math.floor(30+body*16+sta*8+(mods.hp||0));
+  const atk=Math.floor(str*4+hand*1.5);
+  const def=Math.floor(body*0.9+str*0.35+(mods.pDef||0));
+  const mDef=Math.floor(brain*0.7+mag*0.4+(mods.mDef||0));
+
+  return {
+    name,
+    lv,
+    base,
+    maxHp,
+    hp:maxHp,
+    atk,
+    agi:Math.floor(agi),
+    def,
+    mDef,
+    exp:template.exp,
+    drops:template.drops,
+    gauge:0,
+    casting:false,
+    incomingAt:0
+  };
+}
+
+function cell(name,base,mod){
+  const sign=mod>=0?"+":"";
+  const cls=mod>=0?"good":"bad";
+  return `<div class="row">${name}：${fmt(base)} <span class="${cls}">(${sign}${fmt(mod)})</span></div>`;
+}
+
+function modText(mods){
+  if(!mods)return "无加成";
+  return Object.keys(mods).map(k=>`${labelMap[k]||k}${mods[k]>=0?"+":""}${mods[k]}`).join("，");
+}
+
+function advanceTime(days,reason,opt={}){
+  const recoverRate=opt.recoverRate??0.04;
+  const hungerRate=opt.hungerRate??0.35;
+
+  for(let i=0;i<days;i++){
+    player.date.day++;
+    if(player.date.day>30){player.date.day=1;player.date.month++}
+    if(player.date.month>12){player.date.month=1;player.date.year++}
+    player.ageDays++;
+
+    naturalGrowthOneDay();
+    passiveRecoverOneDay(recoverRate);
+
+    if(isHome())player.hunger=Math.min(100,player.hunger+0.15);
+    else player.hunger=Math.max(0,player.hunger-hungerRate);
+
+    if(player.hunger<=0){
+      player.fatigue+=0.5;
+      if(Math.random()<0.01)player.health="饥饿虚弱";
+    }
+
+    if(player.date.day===1){
+      maybeSpawnDungeon();
+      decayJobExp();
+    }
+
+    if(player.ageDays===15*360 && !player.magicAwakened){
+      player.magicAwakened=true;
+      player.affinities=generateAffinities(player.race);
+      player.mp=calcStats(player).maxMp;
+      log("15岁，你的魔力正式觉醒。");
+    }
+  }
+
+  expireDungeons();
+  log(`${reason}，时间推进${days}天。`);
+  normalizeVitals();
+}
+
+function naturalGrowthOneDay(){
+  const y=ageYear();
+  const f=families[player.family];
+
+  let yearlyTotal=aptitudes[player.aptitude]*f.nutrition;
+
+  if(y<3)yearlyTotal*=0.55;
+  else if(y<6)yearlyTotal*=0.75;
+  else if(y<11)yearlyTotal*=1.0;
+  else if(y<15)yearlyTotal*=1.15;
+  else if(y<25)yearlyTotal*=0.45;
+  else yearlyTotal*=0.12;
+
+  if(player.hunger<30)yearlyTotal*=0.75;
+  if(player.fatigue>80)yearlyTotal*=0.75;
+
+  const daily=yearlyTotal/360;
+
+  const weights={
+    body:0.13,
+    hand:0.10,
+    brain:0.11,
+    leg:0.11,
+    str:0.12,
+    mag:0.10,
+    agi:0.11,
+    sta:0.11,
+    int:0.11
+  };
+
+  Object.keys(weights).forEach(k=>{
+    player.base[k]+=daily*weights[k];
+    player.base[k]=Number(player.base[k].toFixed(4));
+  });
+}
+
+function passiveRecoverOneDay(rate){
+  const s=calcStats(player);
+  let r=rate;
+  if(player.hunger<25)r*=0.5;
+  if(player.fatigue>90)r*=0.6;
+  player.sta=Math.min(s.maxSta,player.sta+s.maxSta*r);
+  player.hp=Math.min(s.maxHp,player.hp+s.maxHp*r*0.35);
+  if(player.magicAwakened)player.mp=Math.min(s.maxMp,player.mp+s.maxMp*r*0.45);
+  if(player.fatigue>0)player.fatigue=Math.max(0,player.fatigue-rate*3);
+}
+
+function normalizeVitals(){
+  const s=calcStats(player);
+  player.hp=clamp(Math.floor(player.hp),0,s.maxHp);
+  player.sta=clamp(Math.floor(player.sta),0,s.maxSta);
+  player.mp=clamp(Math.floor(player.mp),0,s.maxMp);
+  player.fatigue=Math.floor(clamp(player.fatigue,0,160));
+  player.hunger=Math.floor(clamp(player.hunger,0,100));
+  if(player.hp<=0)handleDeath("生命归零");
+}
+
+function spendSta(cost,thing){
+  const s=calcStats(player);
+  const wr=weight()/s.carry;
+
+  if(wr>1){
+    log("负重超过上限，无法行动。");
+    return false;
+  }
+
+  if(wr>.8)cost=Math.ceil(cost*1.5);
+  else if(wr>.5)cost=Math.ceil(cost*1.25);
+
+  if(hasItem("驮马") && thing==="移动")cost=Math.ceil(cost*0.6);
+
+  if(player.sta>=cost){
+    player.sta-=cost;
+    return true;
+  }
+
+  const lack=cost-player.sta;
+  player.sta=0;
+  player.fatigue+=lack*4+8;
+  log(`你强行完成${thing}，耐力耗尽，疲劳增加。`);
+
+  if(player.fatigue>=95){
+    log("你因过度疲劳陷入晕厥。");
+    advanceTime(randInt(1,3),"你在昏迷中失去意识",{recoverRate:0.01,hungerRate:0.5});
+    player.fatigue=0;
+    log("你醒来后疲劳被清空，但身体仍然虚弱。");
+
+    if(currentNode().danger>0 && Math.random()<0.35){
+      log("昏迷时你遭到魔兽袭击。");
+      player.hp-=randInt(20,80);
+      normalizeVitals();
+    }
+  }
+
+  return true;
+}
+
+function handleDeath(reason){
+  if(player.dead)return;
+  player.dead=true;
+  if(battleTimer){clearInterval(battleTimer);battleTimer=null}
+  log(`你死了。原因：${reason}。`);
+  saveGame(false);
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2 class="bad">死亡</h2>
+      <p>你的生命在艾尔法大陆终结了。</p>
+      <p>原因：${reason}</p>
+      <button onclick="location.reload()">重新开始</button>
+      <button onclick="clearSave()">清除存档</button>
+    </div>
+  `;
+}
+
+function generateAffinities(race){
+  const bias=races[race].bias;
+  const out={};
+
+  elements.forEach(e=>{
+    if(e==="圣"){
+      const r=randInt(1,100)+(bias[e]||0)*10;
+      out[e]=r>98?"D":"无";
+      return;
+    }
+
+    const r=randInt(1,100)+(bias[e]||0)*10;
+
+    if(r<=8)out[e]="无";
+    else if(r<=20)out[e]="F";
+    else if(r<=35)out[e]="E";
+    else if(r<=52)out[e]="D";
+    else if(r<=70)out[e]="C";
+    else if(r<=85)out[e]="B";
+    else if(r<=96)out[e]="A";
+    else out[e]="S";
+  });
+
+  return out;
+}
+
+function renderAff(aff){
+  let h=`<div class="grid">`;
+  elements.forEach(e=>h+=`<div class="row">${e}：${aff[e]}</div>`);
+  return h+`</div>`;
+}
+
+function learnRate(rank){
+  return {S:95,A:80,B:65,C:50,D:35,E:20,F:10,无:0}[rank]||0;
+}
+
+function keyOf(x,y,w){return `${w}:${x},${y}`}
+function markDiscovered(obj,x,y,w){
+  if(!obj.discovered)obj.discovered={};
+  obj.discovered[keyOf(x,y,w)]=true;
+}
+function isDiscovered(x,y,w){
+  return player.discovered && player.discovered[keyOf(x,y,w)];
+}
+
+function hash(x,y,w,seed=0){
+  let n=x*73856093^y*19349663^seed^(w==="dungeon"?99991:17);
+  n=(n<<13)^n;
+  return Math.abs((n*(n*n*15731+789221)+1376312589)&0x7fffffff);
+}
+
+function currentNode(){
+  return getNode(player.location.x,player.location.y,player.world);
+}
+
+function getNode(x,y,w=player.world){
+  if(w==="dungeon"){
+    return getDungeonNode(x,y);
+  }
+
+  const dynamic=player.dynamicDungeons.find(d=>d.x===x&&d.y===y);
+  if(dynamic){
+    return {
+      name:"限时地下城入口",
+      type:"地下城入口",
+      danger:3,
+      cost:18,
+      resource:"异变",
+      facilities:["enterDungeon"],
+      dynamic:true,
+      dungeonId:dynamic.id
+    };
+  }
+
+  if(x===2 && y===-1){
+    return {
+      name:"废弃地下城入口",
+      type:"地下城入口",
+      danger:3,
+      cost:18,
+      resource:"遗迹",
+      facilities:["enterDungeon"],
+      dynamic:false,
+      dungeonId:"fixed_ruin_dungeon"
+    };
+  }
+
+  const building=getBuildingNode(x,y);
+  if(building)return building;
+
+  const h=hash(x,y,w)%100;
+  const d=Math.abs(x)+Math.abs(y);
+
+  if(d<=1)return {name:"近郊道路",type:"近郊",danger:1,cost:12,resource:"草药",facilities:[]};
+  if(h<25)return {name:"低语森林",type:"森林",danger:2,cost:16,resource:"树木",facilities:[]};
+  if(h<45)return {name:"碎石丘陵",type:"丘陵",danger:2,cost:18,resource:"矿脉",facilities:[]};
+  if(h<65)return {name:"荒废遗迹",type:"遗迹",danger:3,cost:20,resource:"废铁",facilities:[]};
+  if(h<82)return {name:"溪流湿地",type:"湿地",danger:2,cost:18,resource:"草药",facilities:[]};
+  return {name:"荒野营地",type:"荒野",danger:2,cost:17,resource:"干柴",facilities:[]};
+}
+
+function getBuildingNode(x,y){
+  if(x===0&&y===0){
+    return {name:"家",type:player.home.type,danger:0,cost:0,resource:"无",facilities:["home","training","study"]};
+  }
+
+  const homeType=player.home.type;
+  const rich=homeType.includes("镇")||homeType.includes("城");
+
+  if(rich){
+    const local={
+      "1,0":{name:"附近杂货铺",facilities:["general"]},
+      "-1,0":{name:"素材小摊",facilities:["material"]},
+      "0,1":{name:"附近旅馆",facilities:["inn"]},
+      "0,-1":{name:"铁匠铺",facilities:["blacksmith"]},
+      "1,1":{name:"书店",facilities:["bookstore"]},
+      "-1,1":{name:"药店",facilities:["apothecary"]},
+      "1,-1":{name:"冒险者公会",facilities:["guild"]},
+      "-1,-1":{name:"马厩",facilities:["stable"]}
+    }[`${x},${y}`];
+
+    if(local)return {name:local.name,type:"建筑",danger:0,cost:8,resource:"无",facilities:local.facilities};
+  }else{
+    const local={
+      "1,0":{name:"村中杂货铺",facilities:["general"]},
+      "-1,0":{name:"素材收购点",facilities:["material"]},
+      "0,1":{name:"村中空地",facilities:["training"]},
+      "0,-1":{name:"农田",facilities:["farm"]}
+    }[`${x},${y}`];
+
+    if(local)return {name:local.name,type:"村庄建筑",danger:0,cost:8,resource:"无",facilities:local.facilities};
+  }
+
+  const town={
+    "4,0":{name:"小镇广场",facilities:[]},
+    "5,0":{name:"小镇杂货铺",facilities:["general"]},
+    "3,0":{name:"冒险者公会",facilities:["guild"]},
+    "4,1":{name:"药店",facilities:["apothecary"]},
+    "4,-1":{name:"铁匠铺",facilities:["blacksmith"]},
+    "5,1":{name:"书店",facilities:["bookstore"]},
+    "3,1":{name:"素材收购所",facilities:["material"]},
+    "5,-1":{name:"旅馆",facilities:["inn"]},
+    "3,-1":{name:"马厩",facilities:["stable"]}
+  }[`${x},${y}`];
+
+  if(town)return {name:town.name,type:"小镇建筑",danger:0,cost:10,resource:"无",facilities:town.facilities};
+
+  return null;
+}
+
+function createDungeonRun(dungeonId){
+  const size=10;
+  const seed=randInt(10000,99999);
+  return {
+    id:dungeonId,
+    seed,
+    size,
+    floor:1,
+    x:0,
+    y:0,
+    discovered:{"dungeon:0,0":true},
+    cleared:{}
+  };
+}
+
+function getDungeonNode(x,y){
+  const run=player.dungeonRun;
+  if(!run)return {name:"混乱空间",type:"地下城",danger:5,cost:15,resource:"无",facilities:[],room:"normal"};
+
+  const half=Math.floor(run.size/2);
+
+  if(x<-half||x>=half||y<-half||y>=half){
+    return {name:"地下城边界",type:"边界",danger:0,cost:999,resource:"无",facilities:[],blocked:true,room:"wall"};
+  }
+
+  if(x===0&&y===0){
+    return {name:`第${run.floor}层入口`,type:"地下城入口",danger:run.floor+1,cost:10,resource:"无",facilities:["exitDungeon"],room:"entrance"};
+  }
+
+  const h=hash(x,y,"dungeon",run.seed+run.floor*1000)%100;
+
+  if(run.floor<3 && x===half-1 && y===half-1){
+    return {name:"通往下一层的阶梯",type:"楼梯房",danger:run.floor+2,cost:14,resource:"无",facilities:["nextFloor"],room:"stairs"};
+  }
+
+  if(run.floor===3 && x===half-1 && y===half-1){
+    return {name:"Boss房",type:"Boss房",danger:8,cost:18,resource:"无",facilities:[],room:"boss"};
+  }
+
+  if(h<12)return {name:"怪物房",type:"地下城",danger:5+run.floor,cost:16,resource:"无",facilities:[],room:"monster"};
+  if(h<24)return {name:"宝箱房",type:"地下城",danger:3+run.floor,cost:14,resource:"宝箱",facilities:[],room:"treasure"};
+  if(h<36)return {name:"陷阱房",type:"地下城",danger:4+run.floor,cost:15,resource:"陷阱",facilities:[],room:"trap"};
+  if(h<56)return {name:"魔石裂隙",type:"地下城",danger:3+run.floor,cost:15,resource:"魔石",facilities:[],room:"resource"};
+  return {name:"地下通道",type:"地下城地形",danger:2+run.floor,cost:12,resource:"无",facilities:[],room:"normal"};
+}
+function maybeSpawnDungeon(){
+  if(ageYear()<8)return;
+  if(player.world!=="surface")return;
+  if(player.dynamicDungeons.length>=2)return;
+  if(Math.random()>0.12)return;
+
+  const dx=randInt(-4,4);
+  const dy=randInt(-4,4);
+  if(dx===0&&dy===0)return;
+
+  const dungeon={
+    id:"D"+Date.now()+randInt(100,999),
+    x:player.location.x+dx,
+    y:player.location.y+dy,
+    expire:player.ageDays+randInt(180,360)
+  };
+
+  player.dynamicDungeons.push(dungeon);
+  alert("最近大家都在讨论：周围好像出现了地下城……据说入口不会存在太久。");
+  log(`传闻：在坐标(${dungeon.x},${dungeon.y})附近出现了限时地下城。`);
+}
+
+function expireDungeons(){
+  const before=player.dynamicDungeons.length;
+  player.dynamicDungeons=player.dynamicDungeons.filter(d=>d.expire>player.ageDays);
+  if(before>player.dynamicDungeons.length)log("有一处地下城入口悄然消失了。");
+}
+
+function showActions(){
+  if(player.dead){
+    handleDeath("角色已死亡");
+    return;
+  }
+
+  updateTop();
+  markDiscovered(player,player.location.x,player.location.y,player.world);
+
+  const s=calcStats(player);
+  const node=currentNode();
+  const ageDays=getAgeActionDays();
+
+  let actions="";
+
+  if(stage()==="婴儿期" || stage()==="幼儿期"){
+    actions+=act("扑腾身体",`耗时${ageDays}天，消耗2耐力`,"babyMove");
+    actions+=act("观察世界",`耗时${ageDays}天，消耗1耐力`,"babyWatch");
+    actions+=act("安稳睡眠",`耗时${ageDays}天，安全成长`,"babySleep");
+  }else if(stage()==="童年前期" || stage()==="童年中期"){
+    actions+=act("玩耍",`耗时${ageDays}天，消耗6耐力`,"play");
+    actions+=act("简单识字",`耗时${ageDays}天，消耗4耐力`,"basicStudy");
+    actions+=act("模仿动作",`耗时${ageDays}天，消耗6耐力`,"imitate");
+
+    if(node.facilities.includes("home")||node.facilities.includes("training")){
+      actions+=act("基础锻炼",`耗时${ageDays}天，消耗18耐力`,"train");
+    }
+
+    if(node.facilities.includes("home")||node.facilities.includes("study")){
+      actions+=act("阅读学习",`耗时${ageDays}天，消耗10耐力`,"study");
+    }
+
+    actions+=act("帮忙杂活",`耗时${ageDays}天，获得少量铜印`,"work");
+  }else if(stage()==="少年期"){
+    if(node.facilities.includes("home")||node.facilities.includes("training")){
+      actions+=act("基础锻炼","耗时30天，消耗18耐力","train");
+    }
+
+    if(node.facilities.includes("home")||node.facilities.includes("study")){
+      actions+=act("阅读学习","耗时30天，消耗10耐力","study");
+    }
+
+    actions+=act("帮忙杂活","耗时30天，获得少量铜印","work");
+  }else{
+    if(node.facilities.includes("home")||node.facilities.includes("training")){
+      actions+=act("锻炼7天","消耗22耐力","adultTrain");
+    }
+
+    if(node.facilities.includes("home")||node.facilities.includes("study")){
+      actions+=act("学习7天","消耗14耐力","adultStudy");
+    }
+
+    if(node.danger>0)actions+=act("探索此地","消耗大量耐力，可能遇袭","explore");
+    if(node.room==="treasure")actions+=act("开启宝箱","地下城宝箱房事件","openChest");
+    if(node.room==="trap")actions+=act("检查陷阱","地下城陷阱房事件","checkTrap");
+    if(node.room==="monster")actions+=act("进入怪物房","可能遭遇多只魔兽","monsterRoom");
+    if(node.room==="boss")actions+=act("挑战Boss","第3层Boss战","bossFight");
+
+    if(node.facilities.includes("nextFloor"))actions+=act("进入下一层","地下城更深处","nextFloor");
+
+    if(node.resource==="树木")actions+=act("砍树","需要斧子，消耗耐力","cutWood");
+    if(node.resource==="矿脉")actions+=act("挖矿","需要镐子，消耗耐力","mine");
+    if(node.resource==="草药")actions+=act("采草药","消耗耐力","gatherHerb");
+    if(node.resource==="魔石")actions+=act("采集魔石","地下城资源，风险较高","gatherMagicStone");
+
+    if(node.facilities.includes("enterDungeon"))actions+=act("进入地下城","生成独立地下城地图","enterDungeon");
+    if(node.facilities.includes("exitDungeon"))actions+=act("离开地下城","返回地表入口","exitDungeon");
+
+    if(node.facilities.includes("guild"))actions+=act("冒险者公会","测试转职、洗礼","guild");
+    if(node.facilities.includes("general"))actions+=act("杂货铺","食物、帐篷、工具","general");
+    if(node.facilities.includes("apothecary"))actions+=act("药店","药水、草药相关","apothecary");
+    if(node.facilities.includes("blacksmith"))actions+=act("铁匠铺","武器、防具、工具","blacksmith");
+    if(node.facilities.includes("bookstore"))actions+=act("书店","技能书、魔法书","bookstore");
+    if(node.facilities.includes("material"))actions+=act("素材收购所","出售素材","material");
+    if(node.facilities.includes("stable"))actions+=act("马厩","购买坐骑","stable");
+  }
+
+  actions+=act("休息","选择合适的休息方式","rest");
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>${node.name}</h2>
+      <p>
+        ${dateText(player.date)}<br>
+        年龄：${ageText(player.ageDays)}　阶段：${stage()}<br>
+        世界：${player.world==="surface"?"地表":"地下城"}　
+        坐标：(${player.location.x}, ${player.location.y})<br>
+        ${player.world==="dungeon"&&player.dungeonRun?`地下城：第${player.dungeonRun.floor}/3层<br>`:""}
+        地形：${node.type}　危险度：${node.danger}　资源：${node.resource}<br>
+        总等级：${getTotalLevel(player)}<br>
+        HP：${player.hp}/${s.maxHp}　
+        MP：${player.mp}/${s.maxMp}　
+        耐力：${player.sta}/${s.maxSta}<br>
+        疲劳：${player.fatigue}/160　
+        饱食度：${player.hunger}/100<br>
+        货币：${formatMoney(player.coins)}
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>地图</h3>
+      <div class="grid3">
+        <button onclick="setZoom('local')">局部3×3</button>
+        <button onclick="setZoom('mid')">适中5×5</button>
+        <button onclick="setZoom('global')">全局7×7</button>
+      </div>
+      <br>
+      ${renderMap()}
+    </div>
+
+    <div class="card">
+      <h3>可选择行动</h3>
+      <div class="grid">${actions}</div>
+    </div>
+
+    <div class="card">
+      <h3>日志</h3>
+      ${renderLogs()}
+    </div>
+  `;
+}
+
+function act(t,d,k){
+  return `<button onclick="doAction('${k}')" style="text-align:left">${t}<br><span class="small">${d}</span></button>`;
+}
+
+function renderMap(){
+  let radius=1;
+  if(player.mapZoom==="mid")radius=2;
+  if(player.mapZoom==="global")radius=3;
+  if(player.world==="dungeon")radius=3;
+
+  const size=radius*2+1;
+  let html=`<div style="display:grid;grid-template-columns:repeat(${size},1fr);gap:4px;">`;
+
+  for(let y=player.location.y+radius;y>=player.location.y-radius;y--){
+    for(let x=player.location.x-radius;x<=player.location.x+radius;x++){
+      const known=isDiscovered(x,y,player.world);
+      const n=getNode(x,y,player.world);
+      const isCur=x===player.location.x&&y===player.location.y;
+
+      let cls="";
+      if(isCur)cls+=" current";
+      if(x===0&&y===0&&player.world==="surface")cls+=" home";
+      if(n.facilities&&n.facilities.length)cls+=" building";
+      if(n.type.includes("地下城"))cls+=" dungeon";
+      if(n.room==="treasure")cls+=" treasure";
+      if(n.room==="trap")cls+=" trap";
+      if(!known&&!isCur)cls+=" unknown";
+
+      let title=known||isCur?n.name:"未知";
+      let info=known||isCur?`危${n.danger}`:"迷雾";
+
+      if(n.blocked){
+        title="边界";
+        info="不可进入";
+      }
+
+      html+=`
+        <button class="mapcell ${cls}" onclick="moveTo(${x},${y})">
+          ${isCur?"◎ ":""}${title}<br>
+          <span class="small">(${x},${y}) ${info}</span>
+        </button>
+      `;
+    }
+  }
+
+  html+=`</div>`;
+  return html;
+}
+
+function setZoom(z){
+  player.mapZoom=z;
+  showActions();
+}
+
+function moveTo(x,y){
+  if(stage()==="婴儿期"||stage()==="幼儿期"){
+    log("你还太年幼，无法独自移动。");
+    showActions();
+    return;
+  }
+
+  const target=getNode(x,y,player.world);
+
+  if(target.blocked){
+    log("地下城边界无法进入。");
+    showActions();
+    return;
+  }
+
+  const dist=Math.abs(x-player.location.x)+Math.abs(y-player.location.y);
+  if(dist===0)return;
+
+  const cost=target.cost*dist;
+  const days=Math.max(1,dist);
+
+  if(!spendSta(cost,"移动"))return;
+
+  advanceTime(days,`你移动到${target.name}`,{recoverRate:0.015,hungerRate:0.55});
+
+  player.location.x=x;
+  player.location.y=y;
+
+  markDiscovered(player,x,y,player.world);
+
+  if(target.danger>0 && Math.random()<target.danger*0.07){
+    log("移动途中你遭遇了危险。");
+    startEncounter([randomMonster(target)]);
+    return;
+  }
+
+  saveGame(false);
+  showActions();
+}
+
+function doAction(k){
+  if(player.dead)return;
+
+  if(k==="rest"){showRest();return}
+  if(k==="general"){showShop("general");return}
+  if(k==="apothecary"){showShop("apothecary");return}
+  if(k==="blacksmith"){showShop("blacksmith");return}
+  if(k==="bookstore"){showShop("bookstore");return}
+  if(k==="stable"){showShop("stable");return}
+  if(k==="material"){showSell();return}
+  if(k==="guild"){showGuild();return}
+
+  if(k==="enterDungeon"){
+    const node=currentNode();
+    const id=node.dungeonId||("fixed_"+Date.now());
+    player.dungeonRun=createDungeonRun(id);
+    player.world="dungeon";
+    player.location={x:0,y:0};
+    player.mapZoom="global";
+    markDiscovered(player,0,0,"dungeon");
+    log("你进入了地下城。地下城结构开始重新生成。");
+    showActions();
+    return;
+  }
+
+  if(k==="exitDungeon"){
+    player.world="surface";
+    player.location={x:2,y:-1};
+    player.mapZoom="local";
+    player.dungeonRun=null;
+    markDiscovered(player,2,-1,"surface");
+    log("你离开地下城，回到地表入口。地下城内部结构随之崩散。");
+    showActions();
+    return;
+  }
+
+  if(k==="nextFloor"){
+    if(!player.dungeonRun)return;
+
+    if(player.dungeonRun.floor>=3){
+      log("已经是最深层。");
+      showActions();
+      return;
+    }
+
+    player.dungeonRun.floor++;
+    player.location={x:0,y:0};
+    player.dungeonRun.seed=randInt(10000,99999);
+    markDiscovered(player,0,0,"dungeon");
+    log(`你进入地下城第${player.dungeonRun.floor}层。`);
+    showActions();
+    return;
+  }
+
+  const ageDays=getAgeActionDays();
+
+  if(k==="babyMove"){
+    spendSta(2,"扑腾身体");
+    advanceTime(ageDays,"你在婴儿时期扑腾身体",{recoverRate:0.02,hungerRate:0.1});
+    player.base.body+=0.03;
+    player.base.hand+=0.02;
+    player.base.leg+=0.02;
+  }
+
+  if(k==="babyWatch"){
+    spendSta(1,"观察世界");
+    advanceTime(ageDays,"你观察周围的世界",{recoverRate:0.025,hungerRate:0.1});
+    player.base.brain+=0.03;
+    player.base.int+=0.04;
+  }
+
+  if(k==="babySleep"){
+    advanceTime(ageDays,"你安稳成长",{recoverRate:0.08,hungerRate:0.05});
+  }
+
+  if(k==="play"){
+    spendSta(6,"玩耍");
+    advanceTime(ageDays,"你玩耍了一段时间",{recoverRate:0.035,hungerRate:0.18});
+    player.base.leg+=0.05;
+    player.base.agi+=0.04;
+    player.base.hand+=0.03;
+  }
+
+  if(k==="basicStudy"){
+    spendSta(4,"简单识字");
+    advanceTime(ageDays,"你学习简单文字",{recoverRate:0.04,hungerRate:0.15});
+    player.base.brain+=0.06;
+    player.base.int+=0.08;
+  }
+
+  if(k==="imitate"){
+    spendSta(6,"模仿动作");
+    advanceTime(ageDays,"你模仿大人的动作",{recoverRate:0.035,hungerRate:0.18});
+    player.base.hand+=0.06;
+    player.base.leg+=0.04;
+  }
+
+  if(k==="work"){
+    spendSta(14,"帮忙杂活");
+    advanceTime(ageDays,"你做了一些杂活",{recoverRate:0.025,hungerRate:0.35});
+    const c=randInt(6,22);
+    player.coins+=c;
+    addJobExp(8);
+    log(`获得${formatMoney(c)}。`);
+  }
+
+  if(k==="train"||k==="adultTrain"){
+    const adult=k==="adultTrain";
+    spendSta(adult?22:18,"锻炼");
+    advanceTime(adult?7:ageDays,"你进行了锻炼",{recoverRate:0.015,hungerRate:0.45});
+
+    player.base.body+=adult?0.03:0.06;
+    player.base.str+=adult?0.03:0.05;
+    player.base.sta+=adult?0.02:0.04;
+
+    gainProfession("training",adult?3:6);
+    addJobExp(adult?8:10);
+    maybeLearnPhysical();
+  }
+
+  if(k==="study"||k==="adultStudy"){
+    const adult=k==="adultStudy";
+    spendSta(adult?14:10,"学习");
+    advanceTime(adult?7:ageDays,"你进行了学习",{recoverRate:0.025,hungerRate:.3});
+
+    player.base.brain+=adult?0.04:0.06;
+    player.base.int+=adult?0.06:0.08;
+
+    gainProfession("study",adult?3:6);
+    addJobExp(adult?8:10);
+  }
+
+  if(k==="explore"){
+    const n=currentNode();
+    spendSta(26+n.danger*6,"探索");
+    advanceTime(2+n.danger,"你探索了当前区域",{recoverRate:0.01,hungerRate:0.7});
+    exploreCurrent();
+    return;
+  }
+
+  if(k==="monsterRoom"){
+    spendSta(18,"进入怪物房");
+    const count=randInt(2,3);
+    const enemies=[];
+    for(let i=0;i<count;i++)enemies.push(randomMonster(currentNode()));
+    startEncounter(enemies);
+    return;
+  }
+
+  if(k==="bossFight"){
+    spendSta(30,"挑战Boss");
+    startEncounter(["地下城守卫"]);
+    return;
+  }
+
+  if(k==="cutWood"){
+    if(!hasItem("斧子")){
+      log("你需要斧子。");
+      showActions();
+      return;
+    }
+
+    const lv=player.professions.woodcutting||0;
+    spendSta(Math.max(12,24-Math.floor(lv/10)),"砍树");
+    advanceTime(2,"你砍伐树木",{recoverRate:0.01,hungerRate:0.65});
+    addItem("木材",randInt(1,3)+Math.floor(lv/25));
+    addItem("干柴",randInt(1,2));
+    gainProfession("woodcutting",5);
+    log("你获得了木材和干柴。");
+    dangerCheck();
+  }
+
+  if(k==="mine"){
+    if(!hasItem("镐子")){
+      log("你需要镐子。");
+      showActions();
+      return;
+    }
+
+    const lv=player.professions.mining||0;
+    spendSta(Math.max(14,28-Math.floor(lv/10)),"挖矿");
+    advanceTime(2,"你挖掘矿脉",{recoverRate:0.005,hungerRate:0.7});
+    addItem("劣质矿石",randInt(1,3)+Math.floor(lv/25));
+    if(Math.random()<.15+lv*0.002)addItem("魔石碎片",1);
+    gainProfession("mining",5);
+    log("你获得了一些矿石。");
+    dangerCheck();
+  }
+
+  if(k==="gatherHerb"){
+    const lv=player.professions.gathering||0;
+    spendSta(Math.max(8,16-Math.floor(lv/10)),"采草药");
+    advanceTime(1,"你采集草药",{recoverRate:0.015,hungerRate:0.45});
+    addItem("草药",randInt(1,3)+Math.floor(lv/25));
+    gainProfession("gathering",4);
+    log("你获得了一些草药。");
+    dangerCheck();
+  }
+
+  if(k==="gatherMagicStone"){
+    spendSta(30,"采集魔石");
+    advanceTime(2,"你采集魔石裂隙",{recoverRate:0.005,hungerRate:0.8});
+    addItem("魔石碎片",randInt(1,2));
+    log("你从裂隙中取下了魔石碎片。");
+    dangerCheck();
+  }
+
+  if(k==="openChest"){
+    spendSta(10,"开启宝箱");
+    advanceTime(1,"你尝试开启宝箱",{recoverRate:0.01,hungerRate:0.5});
+
+    if(Math.random()<0.75){
+      const reward=randomFrom(["魔石碎片","小型生命药水","小型耐力药水","铁短剑","学徒戒指"]);
+      addItem(reward,1);
+      log(`你打开宝箱，获得了【${reward}】。`);
+    }else{
+      log("宝箱里藏着机关！");
+      player.hp-=randInt(20,70);
+      player.fatigue+=10;
+      normalizeVitals();
+    }
+  }
+
+  if(k==="checkTrap"){
+    spendSta(12,"检查陷阱");
+    advanceTime(1,"你检查陷阱房",{recoverRate:0.01,hungerRate:0.5});
+    const s=calcStats(player);
+
+    if(randInt(1,100)<=45+s.hand+s.int){
+      log("你避开了陷阱，并找到一些废铁。");
+      addItem("废铁",randInt(1,3));
+    }else{
+      log("陷阱被触发，你受伤了。");
+      player.hp-=randInt(25,90);
+      player.fatigue+=15;
+      normalizeVitals();
+    }
+  }
+
+  addExp(4);
+  saveGame(false);
+  showActions();
+}
+
+function gainProfession(name,v){
+  if(!player.professions[name])player.professions[name]=0;
+
+  const before=player.professions[name];
+  player.professions[name]=Math.min(100,player.professions[name]+v);
+
+  const cn={
+    woodcutting:"砍树",
+    mining:"挖矿",
+    gathering:"采集",
+    training:"锻炼",
+    study:"学习"
+  }[name]||name;
+
+  if(Math.floor(before/25)<Math.floor(player.professions[name]/25)){
+    log(`${cn}熟练度提升，当前 ${player.professions[name]}/100。`);
+  }
+}
+
+function dangerCheck(){
+  const n=currentNode();
+
+  if(n.danger>0 && Math.random()<n.danger*0.12){
+    startEncounter([randomMonster(n)]);
+  }
+}
+
+function randomMonster(node){
+  let name="洞穴鼠";
+
+  if(player.world==="dungeon"){
+    const floor=player.dungeonRun?player.dungeonRun.floor:1;
+
+    if(floor===1)name=randomFrom(["洞穴鼠","魔狼"]);
+    if(floor===2)name=randomFrom(["魔狼","腐化哥布林"]);
+    if(floor===3)name=randomFrom(["腐化哥布林","地穴爬行者"]);
+  }else{
+    if(node.type==="森林")name=randomFrom(["魔狼","洞穴鼠"]);
+    else if(node.type==="遗迹")name=randomFrom(["腐化哥布林","洞穴鼠"]);
+    else name=randomFrom(["洞穴鼠","魔狼"]);
+  }
+
+  return name;
+}
+
+function exploreCurrent(){
+  const node=currentNode();
+
+  if(node.room==="normal" && Math.random()<0.18){
+    startEncounter([randomMonster(node)]);
+    return;
+  }
+
+  if(node.danger>0 && Math.random()<node.danger*.14){
+    startEncounter([randomMonster(node)]);
+    return;
+  }
+
+  if(node.resource==="草药"){
+    addItem("草药",randInt(1,2));
+    log("你发现了一些草药。");
+  }else if(node.resource==="废铁"){
+    addItem("废铁",randInt(1,2));
+    log("你捡到了一些废铁。");
+  }else if(node.resource==="矿脉"){
+    addItem("劣质矿石",1);
+    log("你发现了一块矿石。");
+  }else if(node.resource==="魔石"){
+    addItem("魔石碎片",1);
+    log("你发现了一块魔石碎片。");
+  }else{
+    log("你探索了一圈，没有明显收获。");
+  }
+
+  saveGame(false);
+  showActions();
+}
+
+function maybeLearnPhysical(){
+  const pool=["竖劈","横斩","格挡"];
+  const unknown=pool.filter(x=>!player.skills[x]);
+
+  if(unknown.length && Math.random()<.15){
+    const sk=randomFrom(unknown);
+    player.skills[sk]=1;
+
+    const idx=player.skillSlots.findIndex(x=>!x);
+    if(idx!==-1)player.skillSlots[idx]=sk;
+
+    log(`你在练习中领悟了技能【${sk}】。`);
+  }
+}
+
+/* =========================
+   实时战斗系统
+========================= */
+function startEncounter(names){
+  const enemies=names.map(n=>{
+    const floor=player.dungeonRun?player.dungeonRun.floor:1;
+    const extraPower=player.world==="dungeon"?floor*3:0;
+    const mon=createMonster(n,extraPower);
+
+    return {
+      ...mon,
+      gauge:0,
+      casting:false,
+      incomingAt:0
+    };
+  });
+
+  const totalLv=enemies.reduce((a,e)=>a+e.lv,0);
+  const myLv=getTotalLevel(player);
+
+  alert(`遭遇袭击！\n敌方总等级：${totalLv}\n你的总等级：${myLv}`);
+
+  if(totalLv>myLv*1.5){
+    log(`遭遇强敌！敌方总等级 ${totalLv}，明显高于你的总等级 ${myLv}。`);
+  }else{
+    log(`遭遇袭击！敌方总等级：${totalLv}，你的总等级：${myLv}。`);
+  }
+
+  const ps=calcStats(player);
+
+  battle={
+    enemies,
+    playerGauge:0,
+    playerGaugeMax:Math.max(30,ps.maxSta),
+    dodgeUntil:0,
+    casting:null,
+    skillCd:{},
+    log:[]
+  };
+
+  if(battleTimer)clearInterval(battleTimer);
+  battleTimer=setInterval(battleTick,100);
+  renderBattle();
+}
+
+function battleTick(){
+  if(!battle||player.dead)return;
+
+  const s=calcStats(player);
+
+  if(!battle.casting){
+    const speed=3+s.agi*0.06+s.sta*0.03;
+    battle.playerGauge=Math.min(
+      battle.playerGaugeMax,
+      battle.playerGauge+speed
+    );
+  }
+
+  const now=Date.now();
+
+  battle.enemies.forEach(e=>{
+    if(e.hp<=0)return;
+    if(e.casting)return;
+
+    e.gauge+=4+e.agi*0.07;
+
+    if(e.gauge>=100){
+      e.gauge=0;
+      e.casting=true;
+      e.incomingAt=now+900;
+      battle.log.unshift(`${e.name}准备攻击！`);
+      setTimeout(()=>enemyHit(e),900);
+    }
+  });
+
+  renderBattle();
+}
+
+function enemyHit(e){
+  if(!battle||e.hp<=0||player.dead)return;
+
+  e.casting=false;
+
+  const s=calcStats(player);
+  const cm=getCombatMods(player);
+  const now=Date.now();
+
+  let dmg=Math.max(1,Math.floor(e.atk-s.pDef*0.5));
+  dmg=Math.floor(dmg*(1-s.pRes/100));
+
+  if(now<=battle.dodgeUntil){
+    const dodgeRate=clamp(
+      45+s.agi*1.5+s.leg*0.8-e.agi,
+      15,
+      90
+    );
+
+    if(randInt(1,100)<=dodgeRate){
+      dmg=0;
+      battle.log.unshift(`闪避成功！你躲开了${e.name}的攻击。`);
+    }else{
+      battle.log.unshift(`闪避失败！`);
+    }
+  }
+
+  player.hp-=dmg;
+
+  if(dmg>0)battle.log.unshift(`${e.name}击中你，造成${dmg}伤害。`);
+
+  normalizeVitals();
+
+  if(player.hp<=0){
+    endBattle(false);
+    return;
+  }
+
+  renderBattle();
+}
+
+function playerAttack(){
+  if(!battle)return;
+
+  const s=calcStats(player);
+  const attackCost=Math.max(6,Math.floor(s.maxSta*0.12));
+
+  if(battle.playerGauge<battle.playerGaugeMax){
+    battle.log.unshift("你的行动条尚未准备好。");
+    renderBattle();
+    return;
+  }
+
+  if(player.sta<attackCost){
+    battle.log.unshift(`耐力不足，普通攻击需要 ${attackCost} 点耐力。`);
+    renderBattle();
+    return;
+  }
+
+  const target=battle.enemies.find(e=>e.hp>0);
+  if(!target)return;
+
+  player.sta-=attackCost;
+  battle.playerGauge=0;
+
+  const cm=getCombatMods(player);
+
+  const hit=clamp(
+    70+s.agi*0.4+s.hand*0.5+cm.hit-target.agi*0.5,
+    15,
+    95
+  );
+
+  if(randInt(1,100)>hit){
+    battle.log.unshift("你的攻击落空了。");
+    renderBattle();
+    return;
+  }
+
+  let dmg=Math.max(1,Math.floor(s.str*2.4+s.hand*0.8-target.def));
+  dmg=Math.floor(dmg*(1+cm.damage/100));
+
+  target.hp-=dmg;
+
+  battle.log.unshift(`你消耗 ${attackCost} 耐力，攻击${target.name}，造成${dmg}伤害。`);
+
+  checkBattleWin();
+  renderBattle();
+}
+
+function playerDodge(){
+  if(!battle)return;
+
+  const s=calcStats(player);
+  const dodgeCost=Math.max(5,Math.floor(s.maxSta*0.10));
+
+  if(player.sta<dodgeCost){
+    battle.log.unshift(`耐力不足，闪避需要 ${dodgeCost} 点耐力。`);
+    renderBattle();
+    return;
+  }
+
+  player.sta-=dodgeCost;
+
+  const now=Date.now();
+  battle.dodgeUntil=now+600;
+
+  battle.log.unshift(`你消耗 ${dodgeCost} 耐力，尝试闪避即将到来的攻击。`);
+  renderBattle();
+}
+
+function castBattleSkill(slot){
+  if(!battle)return;
+
+  const skName=player.skillSlots[slot];
+
+  if(!skName){
+    battle.log.unshift("该技能栏为空。");
+    renderBattle();
+    return;
+  }
+
+  const sk=skills[skName];
+  const now=Date.now();
+
+  if(battle.skillCd[skName]&&battle.skillCd[skName]>now){
+    battle.log.unshift(`${skName}还在冷却。`);
+    renderBattle();
+    return;
+  }
+
+  if(sk.sta&&player.sta<sk.sta){
+    battle.log.unshift("耐力不足。");
+    renderBattle();
+    return;
+  }
+
+  if(sk.mp&&player.mp<sk.mp){
+    battle.log.unshift("魔力不足。");
+    renderBattle();
+    return;
+  }
+
+  if(sk.sta)player.sta-=sk.sta;
+  if(sk.mp)player.mp-=sk.mp;
+
+  battle.casting={name:skName,start:now,end:now+sk.start};
+  battle.log.unshift(`你开始释放${skName}。`);
+
+  setTimeout(()=>finishSkill(skName),sk.start);
+  battle.skillCd[skName]=now+sk.cd;
+
+  renderBattle();
+}
+
+function finishSkill(skName){
+  if(!battle||player.dead)return;
+
+  const sk=skills[skName];
+  battle.casting=null;
+
+  if(sk.type==="defense"){
+    battle.dodgeUntil=Date.now()+400;
+    battle.log.unshift(`${skName}发动，你进入短暂防御反应状态。`);
+    renderBattle();
+    return;
+  }
+
+  const target=battle.enemies.find(e=>e.hp>0);
+  if(!target)return;
+
+  const s=calcStats(player);
+  const cm=getCombatMods(player);
+
+  let dmg=1;
+
+  if(sk.type==="magic"){
+    dmg=Math.max(1,Math.floor(s.mag*3.2+s.int*1.2-target.mDef*0.5));
+  }else{
+    dmg=Math.max(1,Math.floor(s.str*2.8+s.hand*1.2-target.def));
+  }
+
+  dmg=Math.floor(dmg*sk.power*(1+cm.damage/100));
+  target.hp-=dmg;
+
+  battle.log.unshift(`${skName}命中${target.name}，造成${dmg}伤害。`);
+
+  checkBattleWin();
+  renderBattle();
+}
+
+function checkBattleWin(){
+  if(!battle)return;
+
+  if(battle.enemies.every(e=>e.hp<=0)){
+    endBattle(true);
+  }
+}
+
+function endBattle(win){
+  if(battleTimer){
+    clearInterval(battleTimer);
+    battleTimer=null;
+  }
+
+  if(!battle)return;
+
+  if(win){
+    let exp=0;
+
+    battle.enemies.forEach(e=>{
+      exp+=e.exp;
+
+      e.drops.forEach(d=>{
+        if(Math.random()<0.7)addItem(d,1);
+      });
+    });
+
+    log(`战斗胜利，获得成长经验${exp}。`);
+    addExp(exp);
+    addJobExp(Math.ceil(exp/2));
+
+    if(Math.random()<0.2){
+      log("生死战斗让你获得了额外感悟。");
+      addJobExp(15);
+    }
+  }else{
+    handleDeath("战斗失败");
+    return;
+  }
+
+  battle=null;
+  saveGame(false);
+  showActions();
+}
+
+function escapeBattle(){
+  if(!battle)return;
+
+  const s=calcStats(player);
+  const rate=45+s.agi*1.2;
+
+  if(randInt(1,100)<=rate){
+    log("你成功逃离战斗。");
+
+    if(battleTimer){
+      clearInterval(battleTimer);
+      battleTimer=null;
+    }
+
+    battle=null;
+    showActions();
+  }else{
+    battle.log.unshift("逃跑失败！");
+    player.sta=Math.max(0,player.sta-10);
+    renderBattle();
+  }
+}
+
+function renderBattle(){
+  if(!battle)return;
+
+  updateTop();
+
+  const s=calcStats(player);
+
+  const enemiesHtml=battle.enemies.map((e,i)=>`
+    <div class="row">
+      ${e.name} Lv.${e.lv} ${e.casting?"<span class='warn'>前摇中！</span>":""}<br>
+      HP：${Math.max(0,e.hp)}/${e.maxHp}
+      <div class="battlebar"><div class="enemyfill" style="width:${percent(e.hp,e.maxHp)}%"></div></div>
+      行动条
+      <div class="battlebar"><div class="castfill" style="width:${clamp(e.gauge,0,100)}%"></div></div>
+    </div>
+  `).join("");
+
+  const castHtml=battle.casting?`
+    <p class="warn">正在释放：${battle.casting.name}</p>
+  `:"";
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2 class="bad">战斗中</h2>
+      <p>
+        你的总等级：${getTotalLevel(player)}<br>
+        HP：${player.hp}/${s.maxHp}　
+        MP：${player.mp}/${s.maxMp}　
+        耐力：${player.sta}/${s.maxSta}
+      </p>
+      行动条：${Math.floor(battle.playerGauge)}/${battle.playerGaugeMax}
+      <div class="battlebar">
+        <div class="battlefill" style="width:${percent(battle.playerGauge,battle.playerGaugeMax)}%"></div>
+      </div>
+      ${castHtml}
+    </div>
+
+    <div class="card">
+      <h3>敌人</h3>
+      <div class="grid">${enemiesHtml}</div>
+    </div>
+
+    <div class="card">
+      <h3>操作</h3>
+      <div class="grid">
+        <button onclick="playerAttack()">普通攻击</button>
+        <button onclick="playerDodge()">闪避</button>
+        <button onclick="castBattleSkill(0)">技能1：${player.skillSlots[0]||"空"}</button>
+        <button onclick="castBattleSkill(1)">技能2：${player.skillSlots[1]||"空"}</button>
+        <button onclick="castBattleSkill(2)">技能3：${player.skillSlots[2]||"空"}</button>
+        <button onclick="escapeBattle()">逃跑</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>战斗日志</h3>
+      ${battle.log.slice(0,12).map(x=>`<div class="log-line">${x}</div>`).join("")}
+    </div>
+  `;
+}
+function showRest(){
+  updateTop();
+
+  const node=currentNode();
+  let buttons="";
+
+  if(isHome()){
+    buttons+=`<button onclick="rest('home')">在家睡床<br><span class="small">3天，恢复最快，补充饱食度</span></button>`;
+  }
+
+  if(node.facilities.includes("inn")){
+    buttons+=`<button onclick="rest('inn')">住旅馆<br><span class="small">花费200铜印，恢复较快</span></button>`;
+  }
+
+  buttons+=`<button onclick="rest('sit')">原地休息<br><span class="small">1天，恢复少量</span></button>`;
+  buttons+=`<button onclick="rest('camp')">扎营<br><span class="small">需要帐篷或露营工具</span></button>`;
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>休息</h2>
+      <div class="grid">${buttons}</div>
+    </div>
+    <button onclick="showActions()">返回行动</button>
+  `;
+}
+
+function rest(type){
+  const s=calcStats(player);
+
+  if(type==="home"){
+    advanceTime(3,"你在家中睡床休息",{recoverRate:.35,hungerRate:0});
+    player.sta=Math.min(s.maxSta,player.sta+s.maxSta*.75);
+    player.hp=Math.min(s.maxHp,player.hp+s.maxHp*.5);
+    player.hunger=Math.min(100,player.hunger+35);
+    player.fatigue=0;
+    log("家中的床铺和食物让你恢复得很快，疲劳清空。");
+  }
+
+  if(type==="inn"){
+    if(player.coins<200){
+      log("铜印不足。");
+      showRest();
+      return;
+    }
+
+    player.coins-=200;
+    advanceTime(2,"你在旅馆休息",{recoverRate:.3,hungerRate:0.1});
+    player.sta=Math.min(s.maxSta,player.sta+s.maxSta*.65);
+    player.hp=Math.min(s.maxHp,player.hp+s.maxHp*.4);
+    player.hunger=Math.min(100,player.hunger+25);
+    player.fatigue=Math.max(0,player.fatigue-60);
+  }
+
+  if(type==="sit"){
+    advanceTime(1,"你原地休息",{recoverRate:.12,hungerRate:.25});
+    player.fatigue=Math.max(0,player.fatigue-12);
+  }
+
+  if(type==="camp"){
+    if(!hasItem("简易帐篷")&&!hasItem("露营工具")){
+      log("你缺少帐篷或露营工具。");
+      showRest();
+      return;
+    }
+
+    advanceTime(2,"你在野外扎营",{recoverRate:.22,hungerRate:.4});
+    player.sta=Math.min(s.maxSta,player.sta+s.maxSta*.45);
+    player.hp=Math.min(s.maxHp,player.hp+s.maxHp*.25);
+    player.fatigue=Math.max(0,player.fatigue-35);
+
+    if(currentNode().danger>0 && Math.random()<currentNode().danger*.1){
+      log("夜里魔兽靠近了营地。");
+      startEncounter([randomMonster(currentNode())]);
+      return;
+    }
+  }
+
+  normalizeVitals();
+  saveGame(false);
+  showActions();
+}
+
+function isHome(){
+  return player.world==="surface" && player.location.x===0 && player.location.y===0;
+}
+
+function showStatus(){
+  updateTop();
+
+  const s=calcStats(player);
+  const m=getMods(player);
+  const cm=getCombatMods(player);
+  const aff=player.magicAwakened?renderAff(player.affinities):`<p class="warn">魔法亲和：尚未觉醒。</p>`;
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>角色状态</h2>
+      <p>
+        姓名：${player.name}<br>
+        日期：${dateText(player.date)}<br>
+        年龄：${ageText(player.ageDays)}　阶段：${stage()}<br>
+        种族：${player.race}<br>
+        当前职业：${player.currentJob}（第${identities[player.currentJob].tier}阶位）<br>
+        总等级：${getTotalLevel(player)}<br>
+        家庭：${player.family}<br>
+        实力评级：${s.rank}<br>
+        货币：${formatMoney(player.coins)}<br>
+        健康：${player.health}<br>
+        状态：${player.debuffs.length?player.debuffs.join("、"):"无"}
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>核心数值</h3>
+      <div class="grid">
+        <div class="row">生命：${player.hp}/${s.maxHp}</div>
+        <div class="row">魔力值：${player.mp}/${s.maxMp}</div>
+        <div class="row">耐力：${player.sta}/${s.maxSta}</div>
+        <div class="row">饱食度：${player.hunger}/100</div>
+        <div class="row">疲劳：${player.fatigue}/160</div>
+        <div class="row">负重：${weight()}/${s.carry}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>防御与抗性</h3>
+      <div class="grid">
+        <div class="row">物理防御：${s.pDef}</div>
+        <div class="row">魔法防御：${s.mDef}</div>
+        <div class="row">物理抗性：${s.pRes}%</div>
+        <div class="row">魔法抗性：${s.mRes}%</div>
+        <div class="row">异常抗性：${s.statusRes}%</div>
+        <div class="row">实力评级：${s.rank}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>身体部位</h3>
+      <div class="grid">
+        ${cell("身躯",player.base.body,m.body)}
+        ${cell("手部",player.base.hand,m.hand)}
+        ${cell("脑部",player.base.brain,m.brain)}
+        ${cell("脚部",player.base.leg,m.leg)}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>基础能力</h3>
+      <div class="grid">
+        ${cell("力量",player.base.str,m.str)}
+        ${cell("魔力",player.base.mag,m.mag)}
+        ${cell("敏捷",player.base.agi,m.agi)}
+        ${cell("耐力",player.base.sta,m.sta)}
+        ${cell("智力",player.base.int,m.int)}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>职业记录</h3>
+      ${renderJobs()}
+    </div>
+
+    <div class="card">
+      <h3>战斗修正</h3>
+      <p>
+        伤害修正：${cm.damage}%<br>
+        命中修正：${cm.hit}%<br>
+        格挡修正：${cm.block}%<br>
+        ${cm.text.length?cm.text.join("<br>"):"无特殊持用加成"}
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>生活熟练度</h3>
+      <p>
+        砍树：${player.professions.woodcutting||0}/100<br>
+        挖矿：${player.professions.mining||0}/100<br>
+        采集：${player.professions.gathering||0}/100<br>
+        锻炼：${player.professions.training||0}/100<br>
+        学习：${player.professions.study||0}/100
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>装备</h3>
+      ${equipText()}
+    </div>
+
+    <div class="card">
+      <h3>魔法亲和</h3>
+      ${aff}
+    </div>
+
+    <button onclick="showActions()">返回行动</button>
+  `;
+}
+
+function renderJobs(){
+  return Object.keys(player.jobs).map(j=>{
+    const data=player.jobs[j];
+
+    return `<div class="row">
+      ${j}${j===player.currentJob?"（当前）":""}<br>
+      等级：Lv.${data.level}/${data.maxLv}<br>
+      熟练：${data.exp}/${jobNeedFor(data.level)}<br>
+      <button onclick="switchJob('${j}')">切换为当前职业</button>
+    </div>`;
+  }).join("");
+}
+
+function switchJob(j){
+  player.currentJob=j;
+  player.identity=j;
+  player.jobs[j].lastUse=player.ageDays;
+  log(`你切换当前职业为【${j}】。`);
+  saveGame(false);
+  showStatus();
+}
+
+function equipText(){
+  const e=player.equipment;
+
+  const line=(slot,n,index=null)=>{
+    if(!n)return "无";
+
+    const it=itemDB[n];
+
+    let btn=index===null
+      ? `<button onclick="unequip('${slot}')">卸下</button>`
+      : `<button onclick="unequipRing(${index})">卸下</button>`;
+
+    return `${n}<br><span class="small">${modText(it.mods)}</span><br>${btn}`;
+  };
+
+  let h=`
+    <div class="grid">
+      <div class="row">头部：<br>${line("head",e.head)}</div>
+      <div class="row">胸部：<br>${line("chest",e.chest)}</div>
+      <div class="row">腿部：<br>${line("legs",e.legs)}</div>
+      <div class="row">脚部：<br>${line("feet",e.feet)}</div>
+      <div class="row">左手：<br>${line("leftHand",e.leftHand)}</div>
+      <div class="row">右手：<br>${line("rightHand",e.rightHand)}</div>
+      <div class="row">挂饰：<br>${line("charm",e.charm)}</div>
+      <div class="row">持用方式：<br>${e.stance==="twohand"?"双手持右手武器":"普通"}</div>
+    </div>
+    <h3>戒指</h3>
+    <div class="grid">
+  `;
+
+  e.rings.forEach((r,i)=>{
+    h+=`<div class="row">戒指${i+1}：<br>${line("ring",r,i)}</div>`;
+  });
+
+  h+=`</div>`;
+  return h;
+}
+
+function unequip(slot){
+  const n=player.equipment[slot];
+
+  if(!n){
+    showStatus();
+    return;
+  }
+
+  addItem(n,1);
+  player.equipment[slot]=null;
+  log(`你卸下了${n}。`);
+  saveGame(false);
+  showStatus();
+}
+
+function unequipRing(i){
+  const n=player.equipment.rings[i];
+
+  if(!n){
+    showStatus();
+    return;
+  }
+
+  addItem(n,1);
+  player.equipment.rings[i]=null;
+  log(`你卸下了${n}。`);
+  saveGame(false);
+  showStatus();
+}
+
+function showSkills(){
+  updateTop();
+
+  const names=Object.keys(player.skills);
+
+  let h=names.length?names.map(n=>{
+    const sk=skills[n];
+
+    return `<div class="row">
+      ${n} Lv.${player.skills[n]}<br>
+      <span class="small">
+        ${sk.powerText}<br>
+        ${sk.desc}<br>
+        消耗：${sk.sta?sk.sta+"耐力 ":""}${sk.mp?sk.mp+"魔力值":""}
+      </span><br>
+      <button onclick="setSkillSlotPrompt('${n}')">装备到技能快捷栏</button>
+    </div>`;
+  }).join(""):`<p class="small">尚未掌握技能。</p>`;
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>技能</h2>
+      <p class="small">同一个技能不能重复占用多个快捷栏。</p>
+      <div class="grid">${h}</div>
+    </div>
+    <button onclick="showActions()">返回行动</button>
+  `;
+}
+
+function setSkillSlotPrompt(n){
+  let i=prompt("放入哪个技能栏？请输入 1、2、3");
+  i=Number(i)-1;
+
+  if(i<0||i>2||Number.isNaN(i)){
+    log("取消设置。");
+    showSkills();
+    return;
+  }
+
+  for(let k=0;k<player.skillSlots.length;k++){
+    if(player.skillSlots[k]===n)player.skillSlots[k]=null;
+  }
+
+  player.skillSlots[i]=n;
+  log(`已将${n}设置到技能栏${i+1}。`);
+  saveGame(false);
+  showSkills();
+}
+
+function showBag(){
+  updateTop();
+
+  const names=Object.keys(player.bag);
+
+  let h=names.length?names.map(n=>{
+    const it=itemDB[n]||{};
+    let buttons="";
+
+    if(it.type==="food"||it.type==="use"){
+      buttons+=`<button onclick="useItem('${n}')">使用</button>`;
+      buttons+=`<button onclick="setItemSlotPrompt('${n}')">装备到道具快捷栏</button>`;
+    }
+
+    if(it.type==="equip"){
+      if(it.slot==="weapon"){
+        buttons+=`<button onclick="equipItem('${n}','leftHand')">装备左手</button>`;
+        buttons+=`<button onclick="equipItem('${n}','rightHand')">装备右手</button>`;
+      }else if(it.slot==="ring"){
+        buttons+=`<button onclick="equipItem('${n}','ring')">装备戒指</button>`;
+      }else{
+        buttons+=`<button onclick="equipItem('${n}','${it.slot}')">装备</button>`;
+      }
+    }
+
+    if(it.type==="book")buttons+=`<button onclick="learnBook('${n}')">学习</button>`;
+
+    buttons+=`<button onclick="dropItem('${n}')">丢弃</button>`;
+
+    return `<div class="row">
+      ${n} × ${player.bag[n]}<br>
+      <span class="small">${it.desc||""}<br>重量:${it.weight||1}　价值:${formatMoney(it.price||0)}</span><br>
+      ${buttons}
+    </div>`;
+  }).join(""):`<p class="small">背包为空。</p>`;
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>背包</h2>
+      <p>重量：${weight()} / ${calcStats(player).carry}</p>
+      <div class="grid">${h}</div>
+    </div>
+
+    <div class="card">
+      <h3>持用方式</h3>
+      <div class="grid">
+        <button onclick="setStance('normal')">普通持用</button>
+        <button onclick="setStance('twohand')">双手持右手武器</button>
+      </div>
+    </div>
+
+    <button onclick="showActions()">返回行动</button>
+  `;
+}
+
+function setItemSlotPrompt(n){
+  let i=prompt("放入哪个道具栏？请输入 1、2、3、4");
+  i=Number(i)-1;
+
+  if(i<0||i>3||Number.isNaN(i)){
+    log("取消设置。");
+    showBag();
+    return;
+  }
+
+  for(let k=0;k<player.itemSlots.length;k++){
+    if(player.itemSlots[k]===n)player.itemSlots[k]=null;
+  }
+
+  player.itemSlots[i]=n;
+  log(`已将${n}设置到道具快捷栏${i+1}。`);
+  saveGame(false);
+  showBag();
+}
+
+function setStance(s){
+  player.equipment.stance=s;
+  log(s==="twohand"?"你改为双手持右手武器。":"你改为普通持用。");
+  saveGame(false);
+  showBag();
+}
+
+function useQuickItem(i){
+  const n=player.itemSlots[i];
+
+  if(!n){
+    log("快捷栏为空。");
+    showActions();
+    return;
+  }
+
+  useItem(n);
+}
+
+function useItem(n){
+  if(!player.bag[n]){
+    log("你没有这个物品。");
+    showBag();
+    return;
+  }
+
+  const it=itemDB[n];
+  const s=calcStats(player);
+
+  if(it.type==="food"){
+    player.hunger=Math.min(100,player.hunger+it.hunger);
+    removeItem(n,1);
+    log(`你吃下${n}，饱食度恢复${it.hunger}。`);
+  }else if(it.type==="use"){
+    if(it.effect==="hp")player.hp=Math.min(s.maxHp,player.hp+it.value);
+    if(it.effect==="sta")player.sta=Math.min(s.maxSta,player.sta+it.value);
+    if(it.effect==="mp")player.mp=Math.min(s.maxMp,player.mp+it.value);
+
+    removeItem(n,1);
+    log(`使用了${n}。`);
+  }else{
+    log("这个物品不能直接使用。");
+  }
+
+  saveGame(false);
+  showBag();
+}
+
+function equipItem(n,slot){
+  const it=itemDB[n];
+
+  if(!it||it.type!=="equip")return;
+
+  removeItem(n,1);
+
+  if(slot==="ring"){
+    const idx=player.equipment.rings.findIndex(x=>!x);
+
+    if(idx===-1){
+      addItem(n,1);
+      log("戒指栏已满。");
+      showBag();
+      return;
+    }
+
+    player.equipment.rings[idx]=n;
+  }else{
+    if(player.equipment[slot])addItem(player.equipment[slot],1);
+    player.equipment[slot]=n;
+  }
+
+  log(`装备了${n}。`);
+  saveGame(false);
+  showBag();
+}
+
+function dropItem(n){
+  removeItem(n,1);
+  log(`你丢弃了${n}。`);
+  saveGame(false);
+  showBag();
+}
+
+function learnBook(n){
+  const it=itemDB[n];
+
+  if(!it||it.type!=="book")return;
+
+  const sk=it.skill;
+
+  if(player.skills[sk]){
+    log("你已经学会这个技能了。");
+    showBag();
+    return;
+  }
+
+  let rate=55+calcStats(player).int*.8;
+
+  if(it.element){
+    if(!player.magicAwakened){
+      log("你尚未觉醒魔力，无法学习魔法。");
+      showBag();
+      return;
+    }
+
+    const aff=player.affinities[it.element]||"无";
+
+    if(aff==="无"){
+      log(`你没有${it.element}元素亲和，无法学习。`);
+      showBag();
+      return;
+    }
+
+    rate=learnRate(aff)+calcStats(player).int*.7+calcStats(player).brain*.3;
+  }
+
+  if(randInt(1,100)<=rate){
+    player.skills[sk]=1;
+
+    const idx=player.skillSlots.findIndex(x=>!x);
+    if(idx!==-1)player.skillSlots[idx]=sk;
+
+    removeItem(n,1);
+    log(`你成功学会了【${sk}】。`);
+  }else{
+    log("学习失败。技能书未损坏。");
+  }
+
+  saveGame(false);
+  showBag();
+}
+
+function showShop(type){
+  const goods={
+    general:["粗粮","干粮","肉干","简易帐篷","露营工具","斧子","镐子"],
+    apothecary:["小型生命药水","小型耐力药水","小型魔力药水"],
+    blacksmith:["木剑","铁短剑","匕首","木盾","粗布衣","粗布裤","草鞋","皮帽","斧子","镐子"],
+    bookstore:["技能书·竖劈","技能书·横斩","技能书·格挡","技能书·火球","技能书·风刃"],
+    stable:["驮马"]
+  }[type]||[];
+
+  let h=goods.map(n=>{
+    const it=itemDB[n];
+    const p=shopPrice(n);
+
+    return `<div class="row">
+      ${n}<br>
+      <span class="small">${it.desc}<br>价格:${formatMoney(p)}</span><br>
+      <button onclick="buyItemPrompt('${n}','${type}')">购买</button>
+    </div>`;
+  }).join("");
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>${shopName(type)}</h2>
+      <div class="grid">${h}</div>
+    </div>
+    <button onclick="showActions()">返回</button>
+  `;
+}
+
+function shopName(t){
+  return {
+    general:"杂货铺",
+    apothecary:"药店",
+    blacksmith:"铁匠铺",
+    bookstore:"书店",
+    stable:"马厩"
+  }[t]||"商店";
+}
+
+function shopPrice(n){
+  let p=itemDB[n].price||999;
+  p*=1+player.infamy*.04;
+  p*=1-Math.max(0,player.reputation)*.01;
+  return Math.floor(Math.max(1,p));
+}
+
+function buyItemPrompt(n,type){
+  let qty=prompt(`购买多少个【${n}】？`,"1");
+  qty=Math.max(1,Math.floor(Number(qty)||1));
+
+  const p=shopPrice(n)*qty;
+
+  if(player.coins<p){
+    log("铜印不足。");
+    showShop(type);
+    return;
+  }
+
+  player.coins-=p;
+  addItem(n,qty);
+
+  log(`购买了 ${qty} 个【${n}】，花费 ${formatMoney(p)}，剩余 ${formatMoney(player.coins)}。`);
+
+  saveGame(false);
+  showShop(type);
+}
+
+function showSell(){
+  const sellables=Object.keys(player.bag).filter(n=>
+    ["material","food"].includes(itemDB[n]?.type)
+  );
+
+  let h=sellables.length?sellables.map(n=>{
+    const price=Math.floor((itemDB[n].price||1)*0.35);
+
+    return `
+      <div class="row">
+        ${n} × ${player.bag[n]}<br>
+        <span class="small">收购价：${formatMoney(price)} / 个</span><br>
+        <button onclick="sellItemPrompt('${n}')">出售</button>
+      </div>
+    `;
+  }).join(""):`<p class="small">没有可出售素材。</p>`;
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>素材收购所</h2>
+      <p class="small">收购所会压低价格，通常只能卖到商店标价的三成左右。</p>
+      <div class="grid">${h}</div>
+    </div>
+    <button onclick="showActions()">返回</button>
+  `;
+}
+
+function sellItemPrompt(n){
+  if(!player.bag[n]){
+    log("你没有这个物品。");
+    showSell();
+    return;
+  }
+
+  let qty=prompt(`出售多少个【${n}】？当前拥有 ${player.bag[n]} 个`,"1");
+  qty=Math.max(1,Math.floor(Number(qty)||1));
+  qty=Math.min(qty,player.bag[n]);
+
+  const price=Math.floor((itemDB[n].price||1)*0.35);
+  const total=price*qty;
+
+  removeItem(n,qty);
+  player.coins+=total;
+
+  log(`出售了 ${qty} 个【${n}】，获得 ${formatMoney(total)}，当前持有 ${formatMoney(player.coins)}。`);
+
+  saveGame(false);
+  showSell();
+}
+
+function showGuild(){
+  const s=calcStats(player);
+
+  const canAdv=s.str>=8&&s.sta>=8&&getCurrentJob().level>=3;
+  const canStudent=s.int>=8&&s.brain>=8&&getCurrentJob().level>=3;
+  const canSmith=s.hand>=8&&s.str>=7&&getCurrentJob().level>=3;
+
+  document.getElementById("main").innerHTML=`
+    <div class="card">
+      <h2>冒险者公会</h2>
+      <p class="small">
+        转职不会删除旧职业。<br>
+        旧职业会保留等级和熟练度，但长期不使用会缓慢遗忘熟练。
+      </p>
+
+      <div class="row">
+        冒险家测试<br>
+        条件：力量≥8，耐力≥8，当前职业Lv≥3<br>
+        结果：${canAdv?"符合":"不符合"}<br>
+        <button onclick="changeJob('冒险家',${canAdv},800)">洗礼转职 800铜印</button>
+      </div>
+
+      <div class="row">
+        学徒测试<br>
+        条件：智力≥8，脑部≥8，当前职业Lv≥3<br>
+        结果：${canStudent?"符合":"不符合"}<br>
+        <button onclick="changeJob('学徒',${canStudent},600)">洗礼转职 600铜印</button>
+      </div>
+
+      <div class="row">
+        工匠测试<br>
+        条件：手部≥8，力量≥7，当前职业Lv≥3<br>
+        结果：${canSmith?"符合":"不符合"}<br>
+        <button onclick="changeJob('工匠',${canSmith},900)">洗礼转职 900铜印</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>已掌握职业</h3>
+      ${renderJobs()}
+    </div>
+
+    <button onclick="showActions()">返回</button>
+  `;
+}
+
+function changeJob(job,ok,cost){
+  if(!ok){
+    log("你不符合转职条件。");
+    showGuild();
+    return;
+  }
+
+  if(player.coins<cost){
+    log("铜印不足。");
+    showGuild();
+    return;
+  }
+
+  player.coins-=cost;
+
+  if(!player.jobs[job]){
+    player.jobs[job]={
+      level:1,
+      exp:0,
+      tier:identities[job].tier,
+      maxLv:identities[job].maxLv,
+      lastUse:player.ageDays
+    };
+
+    log(`你完成洗礼，获得新职业【${job}】。`);
+  }else{
+    log(`你重新唤起了职业【${job}】的经验。`);
+  }
+
+  player.currentJob=job;
+  player.identity=job;
+  player.jobs[job].lastUse=player.ageDays;
+
+  saveGame(false);
+  showGuild();
+}
+
+function addJobExp(v){
+  const job=getCurrentJob();
+  job.lastUse=player.ageDays;
+
+  if(job.level>=job.maxLv){
+    job.exp=0;
+    return;
+  }
+
+  job.exp+=v;
+
+  while(job.exp>=jobNeedFor(job.level)&&job.level<job.maxLv){
+    job.exp-=jobNeedFor(job.level);
+    job.level+=1;
+    log(`职业【${player.currentJob}】等级提升到 Lv.${job.level}。`);
+  }
+}
+
+function jobNeedFor(level){
+  return Math.floor(100*Math.pow(level,2.25));
+}
+
+function decayJobExp(){
+  if(!player.jobs)return;
+
+  Object.keys(player.jobs).forEach(jobName=>{
+    const j=player.jobs[jobName];
+
+    if(jobName===player.currentJob)return;
+    if(j.level<=1&&j.exp<=0)return;
+
+    const idleDays=player.ageDays-(j.lastUse||0);
+
+    if(idleDays<180)return;
+
+    const decay=Math.max(1,Math.floor(jobNeedFor(j.level)*0.008));
+    j.exp-=decay;
+
+    if(j.exp<0){
+      if(j.level>1){
+        j.level-=1;
+        j.exp=Math.floor(jobNeedFor(j.level)*0.6);
+        log(`长期未使用，【${jobName}】熟练度下降，职业等级退为 Lv.${j.level}。`);
+      }else{
+        j.exp=0;
+      }
+    }
+  });
+}
+
+function addExp(v){
+  player.exp+=v;
+
+  while(player.exp>=player.expNeed){
+    player.exp-=player.expNeed;
+    player.expNeed=Math.floor(player.expNeed*1.35);
+
+    grantGrowthPoints(5);
+
+    log("你的成长经验积累提升了，获得了少量白值成长。");
+  }
+}
+
+function grantGrowthPoints(points){
+  const pool=["body","hand","brain","leg","str","mag","agi","sta","int"];
+
+  for(let i=0;i<points;i++){
+    const k=randomFrom(pool);
+    player.base[k]+=0.2;
+    player.base[k]=Number(player.base[k].toFixed(3));
+  }
+}
+
+function weight(){
+  let w=0;
+
+  Object.keys(player.bag).forEach(n=>{
+    w+=(itemDB[n]?.weight||1)*player.bag[n];
+  });
+
+  return w;
+}
+
+function hasItem(n){
+  return player.bag[n]&&player.bag[n]>0;
+}
+
+function addItem(n,c){
+  if(!player.bag[n])player.bag[n]=0;
+  player.bag[n]+=c;
+}
+
+function removeItem(n,c=1){
+  if(!player.bag[n])return false;
+
+  player.bag[n]-=c;
+
+  if(player.bag[n]<=0){
+    delete player.bag[n];
+
+    for(let i=0;i<player.itemSlots.length;i++){
+      if(player.itemSlots[i]===n){
+        player.itemSlots[i]=null;
+      }
+    }
+  }
+
+  return true;
+}
+
+function log(t){
+  logs.unshift(t);
+  if(logs.length>80)logs.pop();
+}
+
+function renderLogs(){
+  return logs.length
+    ? logs.map(x=>`<div class="log-line">${x}</div>`).join("")
+    : `<p class="small">暂无日志。</p>`;
+}
+
+function saveGame(show=true){
+  localStorage.setItem("alfaMudV08",JSON.stringify({
+    player,
+    logs
+  }));
+
+  if(show)alert("已保存。");
+}
+
+function loadGame(){
+  const d=localStorage.getItem("alfaMudV08");
+
+  if(!d){
+    alert("没有找到存档。");
+    return;
+  }
+
+  const s=JSON.parse(d);
+  player=s.player;
+  logs=s.logs||[];
+
+  migratePlayer();
+
+  if(player.dead){
+    handleDeath("读取到死亡存档");
+    return;
+  }
+
+  enterGame();
+}
+
+function clearSave(){
+  localStorage.removeItem("alfaMudV08");
+  alert("存档已清除。");
+}
+
+randomReborn();
+</script>
+</body>
+</html>
